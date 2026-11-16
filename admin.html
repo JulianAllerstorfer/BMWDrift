@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E46 Drift Admin</title>
+<style>
+  :root { --yellow: #ffd21f; --red: #ff3b3b; --ink: #111318; --panel: #181b22; --row: #23272f; --muted: #9aa3b5; --heavy: "Arial Black", "Helvetica Neue", Arial, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: #0f1116; color: #fff; font: 14px/1.4 "Helvetica Neue", Arial, sans-serif; padding: 28px 16px; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 { font: 900 34px var(--heavy); margin: 0; transform: skewX(-10deg); display: inline-block; }
+  h1 span { color: var(--yellow); }
+  .sub { color: var(--muted); margin: 6px 0 22px; }
+  .card { background: var(--panel); border: 2px solid var(--ink); border-radius: 14px; padding: 16px; margin-bottom: 16px; box-shadow: 5px 5px 0 rgba(0,0,0,0.4); }
+  .ctitle { display: flex; justify-content: space-between; align-items: baseline; font: 900 15px var(--heavy); color: var(--yellow); margin-bottom: 12px; letter-spacing: 1px; }
+  .ctitle small { font: 700 12px Arial; color: var(--muted); letter-spacing: 0; }
+  .row { display: flex; align-items: center; gap: 12px; background: var(--row); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; flex-wrap: wrap; }
+  .dot { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+  .name { font: 900 16px var(--heavy); }
+  .meta { color: var(--muted); font-size: 12px; }
+  .tag { background: #2f6fdc; color: #fff; font: 700 11px Arial; padding: 2px 7px; border-radius: 5px; margin-left: 6px; vertical-align: middle; }
+  .grow { flex: 1; min-width: 140px; }
+  button { border: 2px solid var(--ink); border-radius: 8px; padding: 8px 14px; font: 900 13px var(--heavy); cursor: pointer; }
+  .kick { background: var(--yellow); color: var(--ink); }
+  .ban { background: var(--red); color: #fff; }
+  .unban { background: #3a3f4b; color: #fff; }
+  .max { background: #2ecc71; color: var(--ink); }
+  button:disabled { opacity: 0.35; cursor: not-allowed; }
+  .empty { color: var(--muted); padding: 6px 2px; }
+  .urls { font: 700 15px monospace; color: #6ff3ff; }
+  #msg { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--yellow); color: var(--ink); font: 900 14px var(--heavy); padding: 10px 18px; border-radius: 10px; border: 2px solid var(--ink); opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #msg.on { opacity: 1; }
+  .off { color: var(--red); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>E46 <span>ADMIN</span></h1>
+  <div class="sub">Nur auf deinem Mac erreichbar. <b>Kicken</b> wirft einen Spieler raus (er kann wieder beitreten). <b>Sperren</b> blockiert sein Gerät, bis du den Server neu startest.</div>
+
+  <div class="card">
+    <div class="ctitle">SPIELER <small id="count" style="margin-left:10px"></small> <button class="max" data-act="maxall" style="margin-left:auto">ALLE AUF MAX</button></div>
+    <div id="players"></div>
+  </div>
+  <div class="card">
+    <div class="ctitle">GESPERRT</div>
+    <div id="banned"></div>
+  </div>
+  <div class="card">
+    <div class="ctitle">LINK FÜR FREUNDE</div>
+    <div id="urls" class="urls"></div>
+  </div>
+</div>
+<div id="msg"></div>
+
+<script>
+  const TOKEN = '__ADMIN_TOKEN__';
+  const COLORS = ['#ffd21f', '#4fc3ff', '#ff5ab0', '#5dff8a', '#ff8a3d'];
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  let online = true;
+
+  function toast(t) { const m = $('msg'); m.textContent = t; m.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => m.classList.remove('on'), 1800); }
+
+  async function api(path, body) {
+    const r = await fetch('/admin/' + path, { method: body ? 'POST' : 'GET', headers: { 'x-admin-token': TOKEN, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
+    return r.json();
+  }
+
+  function ago(ts) { const s = Math.max(0, Math.round((Date.now() - ts) / 1000)); return s < 60 ? s + ' s' : Math.floor(s / 60) + ' min'; }
+
+  function render(st) {
+    $('count').textContent = st.players.length + ' / ' + st.max + ' verbunden';
+    $('players').innerHTML = st.players.length ? st.players.map(p => `
+      <div class="row">
+        <i class="dot" style="background:${COLORS[p.slot % 5]}"></i>
+        <div class="grow"><div class="name">${esc(p.name)}${p.host ? '<span class="tag">DU / HOST</span>' : ''}${p.maxPending ? '<span class="tag">MAX WARTET – SEITE NEU LADEN</span>' : ''}</div>
+          <div class="meta">${esc(p.ip)} · seit ${ago(p.since)} · ${Number(p.total).toLocaleString('de-DE')} Punkte</div></div>
+        <button class="max" data-act="max" data-id="${p.id}" data-name="${esc(p.name)}">ALLES MAX</button>
+        <button class="kick" data-act="kick" data-id="${p.id}" data-name="${esc(p.name)}" ${p.host ? 'disabled' : ''}>KICKEN</button>
+        <button class="ban" data-act="ban" data-id="${p.id}" data-name="${esc(p.name)}" ${p.host ? 'disabled' : ''}>SPERREN</button>
+      </div>`).join('') : '<div class="empty">Noch niemand verbunden.</div>';
+    $('banned').innerHTML = st.banned.length ? st.banned.map(b => `
+      <div class="row"><div class="grow"><div class="name">${esc(b.name)}</div><div class="meta">${esc(b.ip)}</div></div>
+        <button class="unban" data-act="unban" data-ip="${esc(b.ip)}">ENTSPERREN</button></div>`).join('') : '<div class="empty">Niemand gesperrt.</div>';
+    $('urls').innerHTML = st.urls.map(esc).join('<br>') || '—';
+  }
+
+  async function refresh() {
+    try { render(await api('state')); if (!online) { online = true; toast('Wieder verbunden'); } }
+    catch (e) { if (online) { online = false; $('players').innerHTML = '<div class="empty off">Server nicht erreichbar – läuft start-multiplayer.command noch?</div>'; } }
+  }
+
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const act = b.dataset.act;
+    if (act === 'maxall' && !confirm('Alle Spieler auf Max setzen? Das Spiel lädt bei allen kurz neu.')) return;
+    if (act === 'max' && !confirm(b.dataset.name + ' alles auf Max setzen? Level 50, Geld, alle Teile, Reifen, Lacke. Das Spiel lädt bei ihm kurz neu.')) return;
+    if (act === 'ban' && !confirm(b.dataset.name + ' sperren? Das Gerät kann bis zum Server-Neustart nicht mehr beitreten.')) return;
+    b.disabled = true;
+    try {
+      if (act === 'maxall') { const r = await api('maxall', {}); toast(r.n + ' Spieler auf Max gesetzt'); }
+      else if (act === 'unban') { await api('unban', { ip: b.dataset.ip }); toast('Sperre aufgehoben'); }
+      else { await api(act, { id: b.dataset.id }); toast(b.dataset.name + (act === 'ban' ? ' gesperrt' : act === 'max' ? ' ist jetzt auf Max' : ' gekickt')); }
+    } catch (err) { toast('Fehler: ' + err.message); }
+    refresh();
+  });
+
+  refresh();
+  setInterval(refresh, 1500);
+</script>
+</body>
+</html>

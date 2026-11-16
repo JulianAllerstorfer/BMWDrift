@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>BMW Drift</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app"></div>
+
+<!-- ===== Garage / Menü ===== -->
+<div id="garage" class="screen">
+  <div class="logo">
+    <div class="logo-main"><b id="logoModel">E46</b><span>DRIFT</span></div>
+    <div class="logo-sub" id="logoSub">TOURING EDITION</div>
+  </div>
+  <div class="panel">
+    <div class="prog" id="prog">
+      <div class="plv"><small>LEVEL</small><b id="pLvl">1</b></div>
+      <div class="pxp"><div class="pbar"><div id="pFill"></div></div><small id="pXp">0 / 4.000 XP</small></div>
+      <div class="pmoney"><small>KONTO</small><b id="pMoney">0 €</b></div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="car">AUTO</button>
+      <button class="tab" data-tab="paint">LACK</button>
+      <button class="tab" data-tab="wheels">FELGEN</button>
+      <button class="tab" data-tab="stance">FAHRWERK</button>
+      <button class="tab" data-tab="engine">MOTOR</button>
+      <button class="tab" data-tab="look">OPTIK</button>
+      <button class="tab" data-tab="assist">SETUP</button>
+      <button class="tab" data-tab="online">ONLINE</button>
+    </div>
+    <div class="tabbody" id="tab-car">
+      <div class="label">Fahrzeug wählen</div>
+      <div id="models" class="models"></div>
+      <div class="label" id="engLabel">Motor</div>
+      <div id="engines" class="models"></div>
+      <div class="label">Strecke</div>
+      <div id="maps" class="models"></div>
+    </div>
+    <div class="tabbody hidden" id="tab-paint">
+      <div class="label">Lackfarbe</div>
+      <div class="swatches" id="paints"></div>
+      <div class="hint" id="paintName"></div>
+      <div class="label" style="margin-top:14px">Finish</div>
+      <div class="chips three" id="finishes"></div>
+      <div id="camoRow" class="hidden">
+        <div class="label" style="margin-top:14px">Rollstuhl-Tarnung</div>
+        <div class="chips two" id="camos"><button class="chip" data-camo="0">OHNE</button><button class="chip" data-camo="1">💩 KACKHAUFEN</button></div>
+      </div>
+      <div class="hint small-hint">Gesperrte Farben: ein Klick zeigt sie am Auto, ein zweiter kauft sie. Farben und Finish gelten für alle Fahrzeuge.</div>
+    </div>
+    <div class="tabbody hidden" id="tab-wheels">
+      <div class="label">Felgendesign</div>
+      <div class="chips three" id="rims"></div>
+      <div class="label">Felgenfarbe</div>
+      <div class="swatches small" id="rimColors"></div>
+      <div class="label">Größe</div>
+      <div class="chips four" id="rimSizes"></div>
+      <div class="label">Felgenbett / Lippe</div>
+      <div class="chips three" id="lipColors"></div>
+      <div class="toggle-row"><span>Weiße Reifenschrift</span><button id="lettersBtn" class="chip">AUS</button></div>
+    </div>
+    <div class="tabbody hidden" id="tab-stance">
+      <div class="slider"><span>Tieferlegung</span><input type="range" id="drop" min="0" max="9" step="0.5"><b id="dropV"></b></div>
+      <div class="slider"><span>Sturz</span><input type="range" id="camber" min="0" max="12" step="0.5"><b id="camberV"></b></div>
+      <div class="slider"><span>Spurverbreiterung</span><input type="range" id="track" min="0" max="6" step="0.5"><b id="trackV"></b></div>
+      <div class="slider"><span>Reifendruck vorne</span><input type="range" id="pressF" min="1.4" max="3.0" step="0.1"><b id="pressFV"></b></div>
+      <div class="slider"><span>Reifendruck hinten</span><input type="range" id="pressR" min="1.4" max="3.0" step="0.1"><b id="pressRV"></b></div>
+      <div class="slider"><span>Sperrdifferenzial</span><input type="range" id="lsd" min="0" max="100" step="5"><b id="lsdV"></b></div>
+      <div class="slider"><span>Stabi-Balance (vorne)</span><input type="range" id="stabi" min="30" max="75" step="1"><b id="stabiV"></b></div>
+      <div class="hint small-hint">Weniger Druck hinten = mehr Grip &amp; späterer Abriss. Offenes Diff (0 %) = Innenrad dreht durch, schwer zu driften. Mehr Stabi vorne = Heck wird lockerer.</div>
+    </div>
+    <div class="tabbody hidden" id="tab-engine">
+      <div class="stats"><div><b id="statPS">335</b><small>PS</small></div><div><b id="statKG">1420</b><small>kg</small></div><div><b id="statRatio">4,2</b><small>kg/PS</small></div></div>
+      <div class="label">Teile kaufen <span class="lnote" id="shopCar"></span></div>
+      <div id="shop" class="shop"></div>
+      <div class="hint small-hint">Gekaufte Teile gelten für dieses Fahrzeug. Die Regler gehen so weit, wie du ausgebaut hast. Geld gibt's für jeden geschafften Drift.</div>
+      <div class="slider"><span>Leistung</span><input type="range" id="power" min="70" max="160" step="5"><b id="powerV"></b></div>
+      <div class="slider"><span>Turbo-Upgrade</span><input type="range" id="turbo" min="0" max="100" step="5"><b id="turboV"></b></div>
+      <div class="slider"><span>Achsübersetzung</span><input type="range" id="finalPct" min="85" max="125" step="1"><b id="finalPctV"></b></div>
+      <div class="slider"><span>Gewicht</span><input type="range" id="weightPct" min="80" max="110" step="1"><b id="weightPctV"></b></div>
+      <div class="slider"><span>Bremskraft</span><input type="range" id="brakePower" min="60" max="150" step="5"><b id="brakePowerV"></b></div>
+      <div class="slider"><span>Bremsbalance vorne</span><input type="range" id="brakeBias" min="50" max="80" step="1"><b id="brakeBiasV"></b></div>
+      <div class="slider"><span>Lenkgeschwindigkeit</span><input type="range" id="steerSpeed" min="60" max="160" step="5"><b id="steerSpeedV"></b></div>
+      <div class="slider"><span>Lenkeinschlag</span><input type="range" id="lock" min="40" max="70" step="1"><b id="lockV"></b></div>
+      <div class="slider"><span>Handbremse</span><input type="range" id="hbrake" min="50" max="150" step="5"><b id="hbrakeV"></b></div>
+      <div class="slider"><span>Karosserie-Neigung</span><input type="range" id="roll" min="30" max="180" step="10"><b id="rollV"></b></div>
+      <div class="label">Reifen</div>
+      <div class="chips" id="tires"></div>
+      <div class="slider" id="bfRow"><span>Fehlzündungen (Backfire)</span><input type="range" id="backfire" min="0" max="200" step="10"><b id="backfireV"></b></div>
+      <div class="hint small-hint" id="bfHint">Knallen und Flammen beim Gaswegnehmen bei hoher Drehzahl: 0 % = aus, 100 % = Serie, 200 % = knallt fast jedes Mal, mehr Nachschüsse, lauter und größere Flammen.</div>
+      <div class="toggle-row" id="downRow"><span>Knall beim Runterschalten</span><button id="downBtn" class="chip">AN</button></div>
+      <div class="toggle-row" id="alsRow"><span>Anti-Lag (ALS)</span><button id="alsBtn" class="chip">AUS</button></div>
+      <div class="hint small-hint" id="alsHint">Hält den Turbo im Schub unter Druck: kein Turboloch, Knallen und Flammen beim Gaswegnehmen.</div>
+      <div class="slider" id="sootRow"><span>Diesel-Ruß</span><input type="range" id="soot" min="0" max="100" step="5"><b id="sootV"></b></div>
+      <button id="tuneReset" class="sec">MOTOR-TUNING ZURÜCKSETZEN</button>
+    </div>
+    <div class="tabbody hidden" id="tab-look">
+      <div class="label">Reifenqualm</div>
+      <div class="swatches small" id="smokeColors"></div>
+      <div class="label">Heckflügel</div>
+      <div class="chips three" id="spoilers"></div>
+      <div class="label">Angel Eyes</div>
+      <div class="chips four" id="angels"></div>
+      <div class="label">Unterbodenbeleuchtung</div>
+      <div class="chips three" id="neons"></div>
+      <div class="label">Bremssättel</div>
+      <div class="swatches small" id="calipers"></div>
+      <div class="slider"><span>Scheibentönung</span><input type="range" id="tint" min="0" max="100" step="5"><b id="tintV"></b></div>
+      <div class="toggle-row"><span>Frontlippe</span><button id="lipBtn" class="chip">AN</button></div>
+      <div class="toggle-row"><span>Schiebedach</span><button id="sunroofBtn" class="chip">AUS</button></div>
+      <div class="toggle-row"><span>Abschleppschlaufe</span><button id="towBtn" class="chip">AN</button></div>
+      <div class="toggle-row"><span>Auspuffflammen</span><button id="flamesBtn" class="chip">AN</button></div>
+      <div class="slider"><span>Kennzeichen</span><input id="plateInput" class="nameinput" maxlength="10" spellcheck="false"></div>
+    </div>
+    <div class="tabbody hidden" id="tab-assist">
+      <div class="label">Tageszeit</div>
+      <div class="chips three" id="tods"></div>
+      <div class="hint small-hint">„Tag &amp; Nacht“ läuft von selbst durch: ein ganzer Tag dauert 12 Minuten, mit Sonnenaufgang und Sonnenuntergang. Online sehen alle dieselbe Uhrzeit.</div>
+      <div class="toggle-row"><span>Bildeffekte (Leuchten, Vignette)</span><button id="fxBtn" class="chip">AN</button></div>
+      <div class="slider"><span>Gegenlenk-Hilfe</span><input type="range" id="assist" min="0" max="100" step="5"><b id="assistV"></b></div>
+      <div class="slider"><span>Max. Driftwinkel</span><input type="range" id="maxang" min="40" max="75" step="1"><b id="maxangV"></b></div>
+      <div class="toggle-row"><span>Getriebe</span><button id="gearbox" class="chip">AUTOMATIK</button></div>
+      <div class="toggle-row"><span>Spritverbrauch (Großer Ring)</span><button id="fuelBtn" class="chip">AN</button></div>
+      <div class="toggle-row"><span>Sound</span><button id="soundBtn" class="chip">AN</button></div>
+      <div class="slider"><span>Lautstärke</span><input type="range" id="volume" min="0" max="150" step="5"><b id="volumeV"></b></div>
+      <div class="toggle-row"><span>Rauch (Reifen &amp; Diesel)</span><button id="smokeBtn" class="chip">AN</button></div>
+      <div class="label">Lenkrad (Logitech G29 / G920 / G923 …)</div>
+      <div class="hint small-hint" id="wheelStatus">Kein Lenkrad erkannt</div>
+      <div class="toggle-row"><span>Lenkrad benutzen</span><button id="wheelBtn" class="chip">AUTO</button></div>
+      <div class="slider"><span>Lenkwinkel (Anschlag–Anschlag)</span><input type="range" id="wheelRange" min="180" max="900" step="10"><b id="wheelRangeV"></b></div>
+      <div class="toggle-row"><span>Pedale &amp; Tasten</span><button id="wheelCal" class="chip">EINRICHTEN</button></div>
+      <div id="wheelWiz" class="wheelwiz hidden"><div id="wheelWizText"></div><div class="wizbtns"><button id="wheelSkip" class="chip">ÜBERSPRINGEN</button><button id="wheelStop" class="chip">ABBRECHEN</button></div></div>
+    </div>
+    <div class="tabbody hidden" id="tab-online">
+      <div id="mpOff">
+        <div class="label">Multiplayer (bis 5 Spieler)</div>
+        <p class="mptext">Doppelklick auf <b>start-multiplayer.command</b> im Spielordner. Das Spiel öffnet sich dann automatisch, und deine Freunde im selben Netz (z. B. dein Handy-Hotspot) treten über den angezeigten Link bei.</p>
+      </div>
+      <div id="mpOn" class="hidden">
+        <div class="slider"><span>Dein Name</span><input id="mpName" class="nameinput" maxlength="16" spellcheck="false"></div>
+        <div class="label">Status: <b id="mpStatus" class="mpstatus"></b></div>
+        <div id="mpPlayers" class="mpplayers"></div>
+        <div class="label">Link für Freunde</div>
+        <div id="mpUrls" class="mpurls"></div>
+        <a id="mpAdmin" class="sec adminbtn hidden" href="/admin" target="_blank">ADMINPANEL ÖFFNEN</a>
+      </div>
+    </div>
+    <button id="goBtn" class="go">FAHREN ▶</button>
+    <div class="modebtns">
+      <button id="chalBtn" class="sec">🏁 PUNKTE-RUNDE</button>
+      <button id="lapBtn" class="sec">⏱ ZEITRENNEN</button>
+    </div>
+    <div class="modebtns" style="margin-top:8px">
+      <button id="specBtn" class="sec">👁 ZUSCHAUEN</button>
+    </div>
+    <div class="hint" id="modeHint"></div>
+  </div>
+  <div class="controls-card">
+    <div class="ctitle">STEUERUNG</div>
+    <div><kbd>W</kbd>/<kbd>↑</kbd> Gas</div>
+    <div><kbd>S</kbd>/<kbd>↓</kbd> Bremse / Rückwärts</div>
+    <div><kbd>A</kbd><kbd>D</kbd>/<kbd>←</kbd><kbd>→</kbd> Lenken</div>
+    <div><kbd>Leertaste</kbd> Handbremse</div>
+    <div><kbd>Q</kbd>/<kbd>E</kbd> Schalten (manuell)</div>
+    <div><kbd>C</kbd> Kamera · <kbd>R</kbd> Zurücksetzen</div>
+    <div><kbd>X</kbd> Zurück zur Startlinie</div>
+    <div>Hebebühne in der Werkstatt = Garage</div>
+    <div><kbd>M</kbd> Ton · <kbd>Esc</kbd> Pause · <kbd>Y</kbd> Werkstatt · <kbd>T</kbd> Chat</div>
+    <div><kbd>F</kbd> Fenster · <kbd>G</kbd> Marlboro anzünden</div>
+    <div><kbd>H</kbd> Hupe · <kbd>L</kbd> Lichthupe</div>
+    <div><kbd>J</kbd> Jonny schreit (Rollstuhl)</div>
+    <div class="cnote" id="padNote">Controller wird unterstützt</div>
+  </div>
+  <div class="controls-card pad-card hidden" id="padCard">
+    <div class="ctitle">CONTROLLER</div>
+    <div><kbd>RT</kbd> Gas · <kbd>LT</kbd> Bremse</div>
+    <div><kbd>L-Stick</kbd> Lenken</div>
+    <div><kbd>A</kbd>/<kbd>RB</kbd> Handbremse</div>
+    <div><kbd>LB</kbd>/<kbd>↓</kbd> runter · <kbd>↑</kbd> hoch schalten</div>
+    <div><kbd>B</kbd> Kamera · <kbd>Y</kbd> Zurücksetzen</div>
+    <div><kbd>Back</kbd> Startlinie · <kbd>Start</kbd> Pause · <kbd>◀</kbd> Werkstatt</div>
+    <div><kbd>▶</kbd> Fenster · <kbd>R3</kbd> Marlboro</div>
+    <div><kbd>L3</kbd> Hupe · <kbd>R-Stick ↑</kbd> Lichthupe</div>
+    <div class="cnote">Garage: <kbd>✚</kbd> wählen · <kbd>A</kbd> OK · <kbd>LB</kbd><kbd>RB</kbd> Tabs · <kbd>R-Stick</kbd> drehen · <kbd>Start</kbd> FAHREN</div>
+  </div>
+  <div class="drag-hint">⟲ Ziehen zum Drehen</div>
+</div>
+
+<!-- ===== HUD ===== -->
+<div id="hud" class="hidden">
+  <div class="score-top">
+    <div class="total"><small>GESAMT</small><span id="total">0</span></div>
+    <div class="best"><small>BESTER DRIFT</small><span id="best">0</span><em id="bestCar" class="bestcar"></em></div>
+    <div class="hlvl"><small>LEVEL <b id="hLvl">1</b></small><span id="hMoney">0 €</span><div class="hbar"><div id="hFill"></div></div></div>
+  </div>
+  <div id="board" class="board hidden"></div>
+  <div id="chain" class="chain">
+    <div id="chainPts" class="chain-pts">0</div>
+    <div class="chain-row"><span id="chainMult" class="mult">x1.0</span><span id="chainAngle" class="angle">0°</span></div>
+    <div class="anglebar"><div id="angleFill"></div></div>
+    <div id="proxi" class="proxi">NAH AN DER MAUER x2</div>
+    <div id="tandem" class="tandem">TANDEM x10</div>
+  </div>
+  <div id="popups"></div>
+  <div id="chalHud" class="chalhud hidden"><div class="ct" id="chalTitle">CHALLENGE · 1 RUNDE</div><div class="cv"><span id="chalTime">0:00.0</span><span id="chalPts">0</span></div><div class="cbar"><div id="chalFill"></div></div><div class="cr" id="chalRecHud"></div></div>
+  <div id="specHud" class="spechud hidden"><div class="st">👁 ZUSCHAUER</div><div class="sn" id="specName">–</div><div class="si" id="specInfo"></div><div class="sk" id="specKeys">◀ ▶ Spieler · C Kamera · Esc Garage</div></div>
+  <canvas id="mini" class="mini" width="200" height="200"></canvas>
+  <div id="clock" class="clock">☀ 12:00</div>
+  <div id="shout" class="shout hidden"></div>
+  <div id="cig" class="cig hidden"><small>MARLBORO ROT <b id="cigLeft">19/20</b></small><div class="cbar2"><div id="cigFill"></div></div></div>
+  <div id="fuel" class="fuel hidden"><small>TANK</small><div class="fbar"><div id="fuelFill"></div></div></div>
+  <div class="tires" id="tireTemps"><div><small>VA</small><b id="tempF">45°</b></div><div><small>HA</small><b id="tempR">45°</b></div></div>
+  <div class="tacho">
+    <canvas id="tach" width="260" height="260"></canvas>
+    <div class="gear" id="gear">1</div>
+    <div class="speed"><span id="speed">0</span><small>km/h</small></div>
+  </div>
+  <div class="camlabel" id="camlabel"></div>
+  <div id="chat" class="chat">
+    <div id="chatList" class="chatlist"></div>
+    <input id="chatInput" class="chatinput" maxlength="140" spellcheck="false" autocomplete="off" placeholder="Nachricht … (Enter senden, Esc abbrechen)">
+    <div class="chathint" id="chatHint"><kbd>T</kbd> Chat</div>
+  </div>
+  <div id="touch" class="hidden">
+    <div class="tl"><button data-k="left">◀</button><button data-k="right">▶</button></div>
+    <div class="tr"><button data-k="hb" class="hb">HB</button><button data-k="brake">BREMSE</button><button data-k="gas" class="gas">GAS</button></div>
+  </div>
+</div>
+
+<!-- ===== Challenge-Ergebnis ===== -->
+<div id="chalDone" class="screen hidden">
+  <div class="pbox">
+    <div class="ptitle">RUNDE GESCHAFFT!</div>
+    <div class="chres"><b id="chalResPts">0</b><small id="chalResUnit">PUNKTE</small></div>
+    <div class="hint" id="chalResInfo"></div>
+    <button id="chalAgainBtn" class="go">NOCHMAL ▶</button>
+    <button id="chalGarageBtn" class="sec">ZUR GARAGE</button>
+  </div>
+</div>
+
+<!-- ===== Pause ===== -->
+<div id="pause" class="screen hidden">
+  <div class="pbox">
+    <div class="ptitle">PAUSE</div>
+    <button id="resumeBtn" class="go">WEITER</button>
+    <button id="resetBtn" class="sec">AUTO ZURÜCKSETZEN</button>
+    <button id="startBtn" class="sec">ZUR STARTLINIE</button>
+    <button id="garageBtn" class="sec">ZUR GARAGE</button>
+    <div class="slider pvol"><span>Lautstärke</span><input type="range" id="pVolume" min="0" max="150" step="5"><b id="pVolumeV"></b></div>
+  </div>
+</div>
+
+<div id="fade"></div>
+
+<div id="loading" class="screen"><div class="ltext">E46 wird aufgebaut …</div></div>
+
+<script src="js/three.min.js"></script>
+<script src="js/models.js"></script>
+<script src="js/car.js"></script>
+<script src="js/tractor.js"></script>
+<script src="js/mobility.js"></script>
+<script src="js/sky.js"></script>
+<script src="js/post.js"></script>
+<script src="js/track.js"></script>
+<script src="js/peds.js"></script>
+<script src="js/copshow.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/jonny.js"></script>
+<script src="js/net.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
