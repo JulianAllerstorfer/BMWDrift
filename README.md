@@ -10,7 +10,7 @@ Driftspiel im Cartoon-Look mit vier BMWs:
 | **G31 Touring** 530d | B57 Reihensechser-**Diesel**, mit Rußwolken aus dem Auspuff | 263 PS, 620 Nm |
 
 **Woran man die BMWs erkennt:**
-- E46 Touring (Facelift): flache Nieren in der Haube, Doppelscheinwerfer mit großem Blinker außen, schwarze Stoßleisten rundum, Rückleuchten nur am Kotflügel mit klarem Feld oben.
+- E46 Touring (Facelift): breite Nieren mit Chromrahmen in der Haube, Klarglas-Scheinwerfer mit zwei Chromreflektoren und großem Blinker außen, schwarze Stoßleisten mit Kennzeichenträger, zweiteilige Rückleuchten (außen hoch und abfallend mit klarem Blinkerfeld, innen in der Heckklappe mit klarem Rückfahrlicht), Griffleiste über dem Kennzeichen.
 - F21 1er (M140i): große Nieren mit grauem Rahmen, spitze Scheinwerfer, M-Stoßstange mit drei Einlässen, graue Spiegelkappen, Kennzeichen hinten in der Stoßstange, je ein Endrohr links und rechts.
 - F31 Touring: Scheinwerfer laufen direkt in die Nieren, sechseckige LED-Ringe, L-förmige Rückleuchten bis in die Heckklappe.
 - G31 Touring: sehr breite Nieren mit Chromstäben, Air Breather hinter dem Vorderrad, flache breite Rückleuchten, trapezförmige Endrohre.

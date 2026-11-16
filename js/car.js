@@ -1044,10 +1044,13 @@
       housing: real(0x3a414a, 0.35, 0.7),
       headChrome: real(0xb9c0c8, 0.32, 1),
       headDark: real(0x24282e, 0.45, 0.2),
-      headBlack: real(0x15171b, 0.3, 0.35),
+      headBlack: real(0x0f1013, 0.55, 0.1, { envMapIntensity: 0.4 }),
+      reflDark: real(0xaab1b9, 0.1, 1, { envMapIntensity: 1.1 }),
       ferric: real(0x6c7178, 0.3, 0.85),
       satin: real(0xb4b9bf, 0.3, 0.9),
       mesh: real(0x08090a, 0.8, 0),
+      shade: new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.2, depthWrite: false, side: T.DoubleSide }),
+      rubber: real(0x17181a, 0.8, 0, { envMapIntensity: 0.35 }),
       lens: real(0x2a3038, 0.03, 0.4, { envMapIntensity: 1.5 }),
       headGlass: filmic(new T.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, roughness: 0.02, metalness: 0, envMap: envMap(), envMapIntensity: 2.5, depthWrite: false, side: T.DoubleSide }), 'hg'),
       slat: real(0x202226, 0.4, 0.1),
@@ -1072,7 +1075,8 @@
       for (const d of list || []) {
         const polys = d.line ? strokeQuads(d.p, d.line) : [d.round ? roundPoly(d.p, d.round) : d.p];
         for (const q of polys) for (const sd of (d.both === false ? [1] : [1, -1])) {
-          if (where === 'S') grp.add(flatDecal(q, 'S', d.off || 0.004, matOf(d.mat), { side: sd, maxLen: d.maxLen || 0.025 }));
+          if (d.solid && where !== 'S') grp.add(solidDecal(shapeOf(MR(q, sd)), d.solid, where, d.off || 0, matOf(d.mat), { maxLen: d.maxLen || 0.03 }));
+          else if (where === 'S') grp.add(flatDecal(q, 'S', d.off || 0.004, matOf(d.mat), { side: sd, maxLen: d.maxLen || 0.025 }));
           else grp.add(flatDecal(MR(q, sd), where, d.off || 0.006, matOf(d.mat), { maxLen: d.maxLen || 0.025 }));
         }
       }
@@ -1162,6 +1166,15 @@
         const cup = new T.Mesh(new T.CircleGeometry(r, H.hex ? 6 : 32), H.dark ? mats.housing : mats.headDark);
         cup.position.copy(p0.p); orientTo(cup, p0.n); F.add(cup); headObjs.push(cup);
         const p1 = facePose('F', y, sd * z, 0.011);
+        if (H.style === 'reflector') {
+          // Klarglas-Scheinwerfer: verchromter Reflektor, Chromring außen herum, Kappe über der Glühlampe
+          const dg = new T.SphereGeometry(r * 0.93, 28, 10, 0, Math.PI * 2, 0, Math.PI / 2); dg.rotateX(Math.PI / 2);
+          const dome = new T.Mesh(dg, mats.reflDark); dome.position.copy(p1.p); orientTo(dome, p1.n); dome.scale.z = 0.3; F.add(dome);
+          const trim = new T.Mesh(new T.TorusGeometry(r * 0.97, 0.0045, 8, 40), mats.chrome); trim.position.copy(p1.p); orientTo(trim, p1.n); F.add(trim);
+          const capB = new T.Mesh(new T.SphereGeometry(r * 0.17, 14, 8), mats.chrome); capB.position.copy(p1.p).addScaledVector(p1.n, r * 0.27); capB.scale.setScalar(1); orientTo(capB, p1.n); capB.scale.z = 0.6; F.add(capB);
+          if (H.rings) { const ring = new T.Mesh(new T.TorusGeometry(r * 0.86, H.ringW || 0.004, 8, 40), mats.angel); ring.position.copy(p1.p).addScaledVector(p1.n, r * 0.08); orientTo(ring, p1.n); F.add(ring); }
+          continue;
+        }
         const bowl = new T.Mesh(new T.CircleGeometry(r * (H.bowl || 0.8), 32), mats.reflector);
         bowl.position.copy(p1.p); orientTo(bowl, p1.n); F.add(bowl);
         const lens = new T.Mesh(new T.SphereGeometry(r * 0.48, 18, 10), mats.lens);
@@ -1211,8 +1224,12 @@
       if (SP.stripPaint) {
         // lackierte Stoßleiste: nur die Schattenfugen oben und unten
         for (const y of [st[1], st[2]]) F.add(flatDecal([[-st[0], y - 0.0025], [st[0], y - 0.0025], [st[0], y + 0.0025], [-st[0], y + 0.0025]], 'F', 0.004, mats.dark, { maxLen: 0.02 }));
-      } else
-      F.add(flatDecal([[-st[0], st[1]], [st[0], st[1]], [st[0], st[2]], [-st[0], st[2]]], 'F', 0.006, stripMat, { maxLen: 0.02 }));
+      } else {
+        const rr = (st[2] - st[1]) * 0.45, zi = 0.275;
+        for (const sd of [1, -1]) F.add(solidDecal(shapeOf(MR(roundRect(zi - 0.02, st[0], st[1], st[2], [0, rr, rr, 0], 4), sd)), 0.014, 'F', 0, mats.rubber, { maxLen: 0.03 }));
+        // schwarzer Kennzeichenträger, der die Leiste unterbricht
+        F.add(solidDecal(shapeOf(roundRect(-zi, zi, SP.plateF[0] - 0.012, SP.plateF[1] + 0.012, [0.012, 0.012, 0.012, 0.012], 3)), 0.01, 'F', 0, mats.rubber, { maxLen: 0.03 }));
+      }
     }
     // Kennzeichen vorn
     const plateTex = plateTexture(cfg.plate || 'M·E 46');
@@ -1506,8 +1523,7 @@
       if (SP.stripPaint) {
         // lackierte Stoßleiste: nur die Schattenfugen oben und unten
         for (const y of [st[1], st[2]]) R.add(flatDecal([[-st[0], y - 0.0025], [st[0], y - 0.0025], [st[0], y + 0.0025], [-st[0], y + 0.0025]], 'R', 0.004, mats.dark, { maxLen: 0.02 }));
-      } else
-      R.add(flatDecal([[-st[0], st[1]], [st[0], st[1]], [st[0], st[2]], [-st[0], st[2]]], 'R', 0.006, real(0x111214, 0.75, 0, { envMapIntensity: 0.4 }), { maxLen: 0.02 }));
+      } else { const rr = (st[2] - st[1]) * 0.45; R.add(solidDecal(shapeOf(roundRect(-st[0], st[0], st[1], st[2], [rr, rr, rr, rr], 4)), 0.014, 'R', 0, mats.rubber, { maxLen: 0.03 })); }
     }
     const TL = SP.tail, TG = SP.tailgate;
     for (const sd of [1, -1]) {
@@ -1515,7 +1531,7 @@
       R.add(flatDecal(MR(insetPoly(TL.poly, -0.006), sd), 'R', 0.003, mats.dark, { maxLen: 0.02 }));
       R.add(flatDecal(MR(TL.poly, sd), 'R', 0.004, tailBase, { maxLen: 0.02 }));
       for (const ip of TL.inner) R.add(flatDecal(MR(ip, sd), 'R', 0.006, mats.tailInner, { maxLen: 0.02 }));
-      if (TL.gate) R.add(flatDecal(MR(TL.gate, sd), 'R', 0.004, tailBase, { maxLen: 0.02 }));
+      if (TL.gate) { R.add(flatDecal(MR(insetPoly(TL.gate, -0.006), sd), 'R', 0.003, mats.dark, { maxLen: 0.02 })); R.add(flatDecal(MR(TL.gate, sd), 'R', 0.004, tailBase, { maxLen: 0.02 })); }
       if (TL.ind) R.add(flatDecal(MR(TL.ind, sd), 'R', 0.007, mats.tailClear, { maxLen: 0.02 }));
       if (TL.rev) R.add(flatDecal(MR(TL.rev, sd), 'R', 0.007, mats.tailClear, { maxLen: 0.02 }));
       // Leuchtbänder (LED-L-Form) als Linienzüge
@@ -1546,7 +1562,7 @@
     R.add(flatDecal(SP.diffuser, 'R', 0.003, mats.trim));
     addDecals(R, SP.rearDecals, 'R');
     const rf = SP.reflectors;
-    for (const sd of [1, -1]) R.add(flatDecal(MR([[rf[0], rf[2]], [rf[1], rf[2]], [rf[1], rf[3]], [rf[0], rf[3]]], sd), 'R', 0.004, mats.tail));
+    if (rf) for (const sd of [1, -1]) R.add(flatDecal(MR([[rf[0], rf[2]], [rf[1], rf[2]], [rf[1], rf[3]], [rf[0], rf[3]]], sd), 'R', 0.004, mats.tail));
     // Auspuff
     const exhaust = [];
     if (SP.exhaust.type === 'trap') {

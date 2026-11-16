@@ -35,37 +35,56 @@
       ws: [0.035, 0.84, 0.075, 0.79], rw: [-2.265, -2.018, -2.238, -2.045]
     },
     gaps: {
-      lines: [[[0.865, 0.27], [0.865, 0.80], [0.85, 0.94]], [[-0.30, 0.27], [-0.30, 1.0]], [[1.80, 0.40], [1.86, 0.55], [1.93, 0.63], [2.0, 0.66]], [[-1.80, 0.40], [-1.90, 0.53], [-2.31, 0.535]]],
+      lines: [[[0.865, 0.27], [0.865, 0.80], [0.85, 0.94]], [[-0.30, 0.27], [-0.30, 1.0]], [[1.80, 0.40], [1.86, 0.55], [1.93, 0.63], [2.0, 0.66]], [[-1.80, 0.40], [-1.86, 0.60], [-1.95, 0.68], [-2.31, 0.69]]],
       rearDoor: -1.13, doorFront: 0.865, doorBottom: 0.27, hood: [0.86, 2.04]
     },
     molding: [[-0.93, 0.495], [0.84, 0.495], [0.858, 0.5175], [0.84, 0.54], [-0.93, 0.54], [-0.945, 0.5175]],
     charLine: [1.98, -2.27], swage: null, hoodV: [0.95, 2.02, 0.46, 0.215],
-    kidney: { z: [0.02, 0.266], y: [0.652, 0.78], r: [0.026, 0.058, 0.042, 0.02], slats: 8, slatW: 0.0048, slatMat: 'slat' },
-    // Facelift-Scheinwerfer: Unterkante glatt und außen hochgezogen; innen Fernlicht, daneben Abblendlicht, außen der große Blinker
-    head: { dark: true, bowl: 0.86,
-      poly: [[0.287, 0.628], [0.33, 0.617], [0.45, 0.612], [0.56, 0.616], [0.64, 0.63], [0.71, 0.655], [0.765, 0.69], [0.796, 0.726], [0.79, 0.746], [0.74, 0.758], [0.55, 0.771], [0.40, 0.777], [0.30, 0.779], [0.285, 0.766]],
-      lenses: [[0.372, 0.698, 0.05], [0.503, 0.694, 0.06]], rings: true, drl: [],
-      ind: [[0.60, 0.638], [0.66, 0.651], [0.725, 0.677], [0.776, 0.714], [0.782, 0.738], [0.74, 0.75], [0.60, 0.759]], indA: [[0.665, 0.688], [0.722, 0.70], [0.726, 0.726], [0.667, 0.726]] },
+    // breite Nieren mit kräftigem Chromrahmen, außen unten stark gerundet
+    kidney: { z: [0.022, 0.272], y: [0.648, 0.782], r: [0.02, 0.062, 0.036, 0.018], frame: 0.016, depth: 0.03, slats: 9, slatW: 0.0052, slatMat: 'slat' },
+    // Facelift-Scheinwerfer unter Klarglas: innen zwei verchromte Reflektoren, außen der große klare Blinker.
+    // Unterkante mit Bauch unter den Lampen und kleinem Knick vor dem Blinker.
+    head: { dark: true, style: 'reflector', ringW: 0.0036,
+      poly: [[0.285, 0.648], [0.31, 0.633], [0.38, 0.622], [0.47, 0.619], [0.55, 0.628], [0.60, 0.642], [0.64, 0.65], [0.69, 0.657], [0.745, 0.675], [0.79, 0.70], [0.806, 0.724], [0.795, 0.744], [0.74, 0.757], [0.55, 0.771], [0.40, 0.777], [0.30, 0.779], [0.283, 0.768]],
+      lenses: [[0.372, 0.70, 0.052], [0.498, 0.697, 0.058]], rings: true, drl: [],
+      ind: [[0.598, 0.652], [0.64, 0.658], [0.69, 0.665], [0.74, 0.682], [0.782, 0.705], [0.795, 0.724], [0.787, 0.74], [0.74, 0.75], [0.598, 0.762]], indA: arc(0.672, 0.708, 0.02, 0.02, 12, 0, 330) },
     shoulderR: 0.016, domeH: 0.018,
-    // schwarze Stoßleisten vorn/hinten auf Höhe der Türleiste: f/r = [halbe Breite, y0, y1], sides = Polygone (x, y) um die Ecken
-    stripPaint: false, strip: { f: [0.80, 0.49, 0.536], r: [0.80, 0.47, 0.512],
-      sides: [[[1.84, 0.492], [2.1, 0.492], [2.1, 0.534], [1.84, 0.534]], [[-1.86, 0.472], [-2.27, 0.472], [-2.27, 0.51], [-1.86, 0.51]]] },
-    // flacher breiter Einlass unten, runde Nebelscheinwerfer direkt in der lackierten Stoßstange
-    intake: { center: [-0.56, 0.56, 0.232, 0.322], bars: [0.27], pocket: null, fog: [0.64, 0.39, 0.04] },
-    plateF: [0.455, 0.565], tow: [0.33, 0.42], roundelY: 0.80, split: { y: 0.175, w: 0.84, ref: 0.25 },
+    // schwarze Stoßleisten vorn/hinten: f/r = [halbe Breite, y0, y1], sides = Polygone (x, y) um die Ecken
+    stripPaint: false, strip: { f: [0.80, 0.492, 0.54], r: [0.79, 0.522, 0.568],
+      sides: [[[1.84, 0.494], [2.1, 0.494], [2.1, 0.538], [1.84, 0.538]], [[-1.80, 0.524], [-2.27, 0.524], [-2.27, 0.566], [-1.80, 0.566]]] },
+    // flacher, breiter Einlass mit gebogener Unterkante; runde Nebelscheinwerfer in Mulden direkt in der lackierten Stoßstange
+    intake: { centerPoly: [[-0.60, 0.325], [0.60, 0.325], [0.57, 0.288], [0.40, 0.256], [0.0, 0.242], [-0.40, 0.256], [-0.57, 0.288]], centerRound: 0.012, bars: [0.285], pocket: null, fog: [0.645, 0.392, 0.038] },
+    frontDecals: [
+      { p: arc(0.645, 0.392, 0.062, 0.058, 20, 0, 342), mat: 'shade', off: 0.003 },                                   // Mulde um den Nebelscheinwerfer
+      { p: [[0.277, 0.786], [0.277, 0.648], [0.262, 0.637], [0, 0.635]], line: 0.0045, mat: 'dark', off: 0.004 },    // Haubenfuge um die Nieren
+      { p: [[0.277, 0.60], [0.56, 0.597], [0.84, 0.588]], line: 0.004, mat: 'dark', off: 0.004 },                     // Fuge Stoßstange unter dem Scheinwerfer
+      { p: [[0.602, 0.656], [0.602, 0.76]], line: 0.006, mat: 'headBlack', off: 0.0145 },                             // Steg zwischen Lampen und Blinker
+      { p: [[-0.39, 0.44], [-0.33, 0.44], [-0.33, 0.476], [-0.39, 0.476], [-0.39, 0.44]], line: 0.003, mat: 'dark', off: 0.004, both: false }   // Klappe der Abschleppöse
+    ],
+    plateF: [0.458, 0.568], tow: [0.33, 0.42], roundelY: 0.80, split: { y: 0.175, w: 0.84, ref: 0.25 },
     mirror: [0.63, 1.03, 0.99], handles: [-0.13, -0.98], handleY: 0.887, sideInd: [0.93, 0.99, 0.735, 0.758],
     rails: { x0: -0.08, x1: -1.96, z: 0.585, lift: 0.055 }, antenna: { type: 'stick', x: -1.97 },
     roofSpoiler: -2.07, spoilerFlush: true, wiper: [0.74, 0.975], rearWiper: [-2.18, 1.13],
-    // Rückleuchte sitzt am Kotflügel und zieht um die Ecke: unten rot, oben innen das klare Feld (Blinker + Rückfahrlicht)
-    tail: { poly: [[0.492, 0.745], [0.79, 0.742], [0.84, 0.765], [0.85, 0.85], [0.835, 0.915], [0.79, 0.955], [0.71, 0.968], [0.492, 0.968]],
-      inner: [[[0.506, 0.768], [0.80, 0.766], [0.822, 0.80], [0.822, 0.852], [0.506, 0.852]]],
-      ind: [[0.506, 0.872], [0.70, 0.872], [0.715, 0.953], [0.506, 0.953]],
-      side: [[-2.272, 0.745], [-2.17, 0.75], [-2.10, 0.80], [-2.085, 0.87], [-2.12, 0.93], [-2.19, 0.962], [-2.272, 0.968]], sideIn: [[-2.268, 0.768], [-2.18, 0.773], [-2.125, 0.815], [-2.115, 0.852], [-2.268, 0.852]] },
-    tailgate: { half: 0.472, y0: 0.52, y1: 0.99 }, plateR: [0.61, 0.72], roundelR: 0.805, chromeBar: null,
-    // Griffleiste über dem Kennzeichen
-    rearDecals: [{ p: [[-0.33, 0.742], [0.33, 0.742], [0.33, 0.75], [-0.33, 0.75]], mat: 'dark', both: false, off: 0.003 }],
-    badges: [{ t: '330i', z: 0.36, y: 0.80, font: 'bold 46px Arial', w: 0.12 }, { t: 'touring', z: -0.36, y: 0.80, font: 'italic 44px Georgia', w: 0.13 }],
-    diffuser: [[-0.78, 0.25], [0.78, 0.25], [0.74, 0.355], [-0.74, 0.355]], reflectors: [0.6, 0.74, 0.40, 0.42],
+    // Rückleuchten zweiteilig: außen am Kotflügel hoch und nach außen abfallend (oben klar mit Blinker, unten rot),
+    // innen in der Heckklappe ein niedrigeres Rechteck (oben klares Rückfahrlicht, unten rot)
+    tail: { poly: [[0.592, 0.70], [0.80, 0.70], [0.845, 0.715], [0.853, 0.76], [0.835, 0.80], [0.79, 0.85], [0.72, 0.895], [0.65, 0.92], [0.592, 0.928]],
+      inner: [[[0.60, 0.712], [0.80, 0.712], [0.838, 0.725], [0.843, 0.76], [0.828, 0.795], [0.80, 0.83], [0.60, 0.83]], [[0.393, 0.71], [0.558, 0.71], [0.558, 0.782], [0.393, 0.782]]],
+      ind: [[0.60, 0.84], [0.793, 0.84], [0.72, 0.887], [0.65, 0.911], [0.60, 0.919]],
+      gate: [[0.398, 0.70], [0.565, 0.70], [0.565, 0.836], [0.398, 0.836], [0.385, 0.824], [0.385, 0.712]],
+      rev: [[0.393, 0.792], [0.558, 0.792], [0.558, 0.828], [0.399, 0.828], [0.393, 0.821]],
+      side: [[-2.275, 0.70], [-2.19, 0.70], [-2.15, 0.715], [-2.135, 0.75], [-2.16, 0.79], [-2.21, 0.83], [-2.275, 0.862]],
+      sideIn: [[-2.272, 0.712], [-2.195, 0.712], [-2.162, 0.725], [-2.15, 0.75], [-2.17, 0.785], [-2.21, 0.818], [-2.272, 0.83]] },
+    tailgate: { half: 0.578, y0: 0.69, y1: 0.99 }, plateR: [0.705, 0.815], plateBare: true, roundelR: 0.908, chromeBar: null,
+    rearDecals: [
+      { p: [[-0.335, 0.693], [0.335, 0.693], [0.355, 0.826], [-0.355, 0.826]], mat: 'shade', both: false, off: 0.003 },                 // Kennzeichenmulde
+      { p: [[-0.40, 0.828], [0.40, 0.828], [0.385, 0.858], [-0.385, 0.858]], mat: 'paint', solid: 0.02, both: false, round: 0.01 },   // Griffleiste über dem Kennzeichen
+      { p: [[-0.39, 0.824], [0.39, 0.824]], line: 0.006, mat: 'dark', both: false, off: 0.004 },                                         // Schatten unter der Griffleiste
+      { p: [[0.578, 0.69], [0.86, 0.69]], line: 0.0045, mat: 'dark', off: 0.003 },                                                     // Stoßstangenfuge unter den Leuchten
+      { p: arc(0.665, 0.872, 0.018, 0.016, 10, 0, 324), mat: 'amber', off: 0.0075 },                                                   // Blinkerbirne im klaren Feld
+      { p: [[0.602, 0.835], [0.80, 0.835]], line: 0.005, mat: 'dark', off: 0.0075 }, { p: [[0.393, 0.787], [0.558, 0.787]], line: 0.004, mat: 'dark', off: 0.0075 }
+    ],
+    badges: [{ t: '330i', z: 0.30, y: 0.90, font: 'bold 46px Arial', w: 0.12 }],
+    diffuser: [[-0.66, 0.25], [0.66, 0.25], [0.62, 0.318], [-0.62, 0.318]], reflectors: null,
     exhaust: { type: 'round', tips: [[-0.535, 0.27, 0.038], [-0.425, 0.27, 0.038]] }
   };
 
