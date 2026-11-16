@@ -132,6 +132,10 @@
       <div class="toggle-row"><span>Lenkrad benutzen</span><button id="wheelBtn" class="chip">AUTO</button></div>
       <div class="slider"><span>Lenkwinkel (Anschlag–Anschlag)</span><input type="range" id="wheelRange" min="180" max="900" step="10"><b id="wheelRangeV"></b></div>
       <div class="toggle-row"><span>Pedale &amp; Tasten</span><button id="wheelCal" class="chip">EINRICHTEN</button></div>
+      <div class="toggle-row"><span>Force Feedback</span><button id="ffbBtn" class="chip">VERBINDEN</button></div>
+      <div class="slider"><span>Force-Feedback-Stärke</span><input type="range" id="ffbStr" min="0" max="100" step="5"><b id="ffbStrV"></b></div>
+      <div class="toggle-row"><span>Kraftrichtung</span><button id="ffbInv" class="chip">NORMAL</button></div>
+      <div class="hint small-hint">Test: das Lenkrad zieht erst nach <b>rechts</b>, dann nach links. Zieht es falsch herum, „Kraftrichtung“ umstellen.</div>
       <div id="wheelWiz" class="wheelwiz hidden"><div id="wheelWizText"></div><div class="wizbtns"><button id="wheelSkip" class="chip">ÜBERSPRINGEN</button><button id="wheelStop" class="chip">ABBRECHEN</button></div></div>
     </div>
     <div class="tabbody hidden" id="tab-online">
@@ -273,6 +277,7 @@
 <script src="js/jonny.js"></script>
 <script src="js/net.js"></script>
 <script src="js/progress.js"></script>
+<script src="js/ffb.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

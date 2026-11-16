@@ -199,6 +199,13 @@ Du hörst die Motoren der anderen Spieler, mit ihrem eigenen Sound, Reifenquiets
 - Pause: Steuerkreuz und A wählen, B geht zurück ins Spiel.
 - Der Controller vibriert beim Driften, bei Einschlägen und bei Fehlzündungen. Ist er verbunden, zeigt die Garage seine Belegung an.
 
+**Lenkrad mit Force Feedback** (Logitech G25, G27, G29, G923 PlayStation-Version, Driving Force GT/Pro):
+- Im Tab SETUP unter „Lenkrad“ auf **VERBINDEN** klicken und im Browser-Fenster das Lenkrad auswählen. Das musst du nur einmal machen, danach verbindet es sich von selbst.
+- Das Lenkrad wird mit dem Tempo schwerer und am Grip-Limit wieder leichter. Im Drift zieht es von selbst in die Gegenlenk-Richtung. Dazu kommen Dämpfung, ein Anschlag am eingestellten Lenkwinkel und Stöße bei Einschlägen, Fehlzündungen und durchdrehenden Rädern.
+- Mit **Force-Feedback-Stärke** (0–100 %) stellst du ein, wie stark es zieht. 0 % schaltet die Kräfte ab.
+- **TESTEN** lässt das Lenkrad erst nach rechts, dann nach links ziehen. Ist es falsch herum, stellst du die **Kraftrichtung** um.
+- Das geht nur in Chrome oder Edge, über `localhost` oder `https` (WebHID). G920 und G923 in der Xbox-Version werden nicht unterstützt, weil sie ein anderes Protokoll sprechen.
+
 ## Tipps zum Driften
 Fahr mit 50–80 km/h an, lenk ein und zieh kurz die Handbremse (oder gib im 2. Gang Vollgas).
 Den Driftwinkel hältst du dann mit dem Gas. Je länger der Drift, desto höher der Multiplikator (bis x5).
@@ -210,6 +217,7 @@ Fährst du mit dem Heck nah an der Mauer entlang, zählen die Punkte doppelt. Ei
 - `js/track.js` – Strecke „Hakone Lane“ und die Umgebung
 - `js/peds.js` – Fußgänger am Zebrastreifen (Großer Ring)
 - `js/copshow.js` – Polizist und Rollenprüfstand für den Polizei-Film
+- `js/ffb.js` – Force Feedback für Logitech-Lenkräder (WebHID)
 - `js/physics.js` – Driftphysik (Raddrehzahl, kombinierter Schlupf, Reifentemperatur, Sperrdiff, Turbo)
 - `js/fx.js` – Reifenqualm, Bremsspuren, Auspuffflammen, Funken
 - `js/sky.js` – Himmel und Tageszeit (Sonne, Mond, Sterne, Lichtfarben)

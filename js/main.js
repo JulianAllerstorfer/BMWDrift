@@ -467,6 +467,14 @@
     // Lenkrad
     $('wheelBtn').addEventListener('click', () => { wheel.mode = { auto: 'on', on: 'off', off: 'auto' }[wheel.mode]; saveWheel(); refreshWheelUI(); });
     { const el = $('wheelRange'); el.value = wheel.range; const upd = () => { wheel.range = +el.value; $('wheelRangeV').textContent = wheel.range + '°'; saveWheel(); }; el.addEventListener('input', upd); upd(); }
+    $('ffbBtn').addEventListener('click', async () => {
+      if (!window.FFB) return;
+      if (FFB.connected) { ffb.testT = 1.4; return; }
+      if (await FFB.connect()) { padToast('🏎 Force Feedback aktiv'); ffb.testT = 1.4; }
+      refreshWheelUI();
+    });
+    { const el = $('ffbStr'); el.value = wheel.ffb; const upd = () => { wheel.ffb = +el.value; $('ffbStrV').textContent = wheel.ffb + ' %'; saveWheel(); }; el.addEventListener('input', upd); upd(); }
+    { const b = $('ffbInv'), upd = () => { b.textContent = wheel.ffbInv ? 'UMGEKEHRT' : 'NORMAL'; }; b.addEventListener('click', () => { wheel.ffbInv = !wheel.ffbInv; saveWheel(); upd(); ffb.testT = 1.4; }); upd(); }
     $('wheelCal').addEventListener('click', () => { Object.assign(wiz, { on: true, step: 0, base: null, best: null, held: false }); wizShow(); });
     $('wheelSkip').addEventListener('click', () => { if (wiz.on) wizNext(); });
     $('wheelStop').addEventListener('click', () => { wiz.on = false; wizShow(); });
@@ -806,7 +814,7 @@
   // Lenkachse kommt fast immer als Achse 0. Pedale und Tasten melden die Lenkräder im Browser je nach Modell und
   // System verschieden, darum ein kurzer Assistent im SETUP (Werte landen in localStorage, nicht in cfg/online).
   const WHEEL_RE = /logitech|046d|g29|g920|g923|g27|g25|driving force|momo|thrustmaster|fanatec|wheel|lenkrad/i;
-  const wheel = Object.assign({ mode: 'auto', range: 450, steerAx: 0, steerSign: 1, steerC: 0, gasAx: -1, gasRest: 1, gasFull: -1, brkAx: -1, brkRest: 1, brkFull: -1, hbBtn: -1, upBtn: -1, dnBtn: -1, id: '' }, load('e46drift.wheel', {}));
+  const wheel = Object.assign({ mode: 'auto', range: 450, steerAx: 0, steerSign: 1, steerC: 0, gasAx: -1, gasRest: 1, gasFull: -1, brkAx: -1, brkRest: 1, brkFull: -1, hbBtn: -1, upBtn: -1, dnBtn: -1, id: '', ffb: 60, ffbInv: false }, load('e46drift.wheel', {}));
   const saveWheel = () => store('e46drift.wheel', wheel);
   let wheelPrev = {}, wheelSeen = '';
   const wiz = { on: false, step: 0, base: null, best: null, held: false };
@@ -898,12 +906,46 @@
         ' · Bremse ' + (wheel.brkAx >= 0 ? pc(wPedal(p, wheel.brkAx, wheel.brkRest, wheel.brkFull)) : '–') +
         (wheel.gasAx < 0 ? '<br><b>Pedale noch nicht eingerichtet</b> – auf „EINRICHTEN“ klicken.' : '');
     }
+    if (window.FFB) {
+      txt += '<br>Force Feedback: ' + (FFB.connected ? '✅ ' + esc(FFB.name) :
+        FFB.unsupported ? esc(FFB.unsupported) + ' wird nicht unterstützt (nur G25/G27/G29/G923 PS/DFGT)' :
+        !FFB.supported() ? 'geht nur in Chrome/Edge (localhost oder https)' : FFB.error ? esc(FFB.error) : 'nicht verbunden – auf „VERBINDEN“ klicken');
+      const fb = FFB.connected ? 'TESTEN' : 'VERBINDEN';
+      if ($('ffbBtn').textContent !== fb) $('ffbBtn').textContent = fb;
+    }
     if ($('wheelStatus').innerHTML !== txt) $('wheelStatus').innerHTML = txt;
   }
-  function wheelFrame() {
+  // ---------- Force Feedback (js/ffb.js, Logitech über WebHID) ----------
+  // Rückstellmoment aus dem Schräglauf der Vorderräder: wird mit dem Tempo schwerer und am Grip-Limit leichter,
+  // im Drift zieht das Lenkrad von selbst in die Gegenlenk-Richtung. Dazu Dämpfung, Anschlag am Lenkwinkel und Stöße.
+  const ffb = { prev: null, joltT: 0, joltA: 0, flip: false, testT: 0 };
+  function ffbJolt(a, ms) { if (a > ffb.joltA || ffb.joltT <= 0) ffb.joltA = Math.min(1, a); ffb.joltT = Math.max(ffb.joltT, ms / 1000); }
+  function ffbFrame(dt, p) {
+    if (!window.FFB || !FFB.connected) return;
+    const k = wheel.ffb / 100;
+    if (!p || wheel.mode === 'off' || (k <= 0 && ffb.testT <= 0)) { ffb.prev = null; FFB.set(0); return; }
+    const pos = (wAx(p, wheel.steerAx) - wheel.steerC) * wheel.steerSign;   // 900°-Bereich, + = rechts
+    const vel = ffb.prev == null || dt <= 0 ? 0 : (pos - ffb.prev) / dt; ffb.prev = pos;
+    const ps = pos * 900 / wheel.range;                                      // ±1 = eingestellter Lenkwinkel
+    let f = 0, lock = 0;
+    if (ffb.testT > 0) { ffb.testT -= dt; f = ffb.testT > 0.7 ? 0.45 : -0.45; }   // Test: erst rechts, dann links
+    else if (mode === 'drive') {
+      const spd = phys.speed, sp = Math.min(1, spd / 10);
+      const x = Math.abs(phys.aF || 0) / 0.1, sat = x * Math.exp(1 - x);   // Spitze bei ca. 6° Schräglauf
+      f += Math.sign(phys.aF || 0) * sat * 0.6 * sp * (0.6 + 0.4 * Math.min(1, spd / 30)) * (phys.u < 0 ? 0.3 : 1);
+      f -= ps * 0.12 * sp;                                                   // etwas Grund-Rückstellung
+      f -= vel * (0.06 + 0.12 * (1 - sp));                                   // Dämpfung (im Stand schwerer)
+      if (ffb.joltT > 0) { ffb.joltT -= dt; ffb.flip = !ffb.flip; f += (ffb.flip ? 1 : -1) * ffb.joltA * 0.5; }
+      if (Math.abs(ps) > 1) lock = -Math.sign(ps) * Math.min(1, (Math.abs(ps) - 1) * 10);   // Anschlag
+    }
+    f = f * (ffb.testT > 0 ? Math.max(k, 0.5) : k) + lock * Math.max(k, 0.6);
+    FFB.set(wheel.ffbInv ? -f : f);
+  }
+  function wheelFrame(dt) {
     if (wiz.on) wizTick();
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     const p = findWheel(pads);
+    ffbFrame(dt || 0, p);
     if (p && wheelSeen !== p.id) { wheelSeen = p.id; padToast(wheel.gasAx >= 0 ? '🏎 Lenkrad verbunden' : '🏎 Lenkrad erkannt · Pedale im SETUP einrichten'); }
     if (mode === 'garage' && !$('tab-assist').classList.contains('hidden')) refreshWheelUI();
   }
@@ -983,6 +1025,7 @@
   }
   function rumble(weak, strong, ms) {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    ffbJolt(Math.max(strong, weak * 0.5), ms);
     for (const p of pads) {
       if (!p || !p.vibrationActuator) continue;
       try { p.vibrationActuator.playEffect('dual-rumble', { duration: ms, weakMagnitude: Math.min(1, weak), strongMagnitude: Math.min(1, strong) }); } catch (e) { /* */ }
@@ -2557,7 +2600,7 @@
     if (!SHOT) requestAnimationFrame(frame);
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     padMenu(dt);
-    wheelFrame();
+    wheelFrame(dt);
     if (mode === 'garage') { updateGarage(dt); post.bloom = 0.3; post.threshold = 0.9; draw(garageScene); }
     else if (mode === 'drive') { camera.clearViewOffset(); updateDrive(dt); draw(driveScene); }
     if (padWorkshop) { padWorkshop = false; if (mode === 'drive') toWorkshop(); }
