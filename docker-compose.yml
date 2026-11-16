@@ -1,0 +1,20 @@
+services:
+  bmwdrift:
+    build: .
+    image: bmwdrift:latest
+    container_name: bmwdrift
+    restart: unless-stopped
+    environment:
+      PUBLIC_URL: https://${NGROK_DOMAIN:-pacifist-romp-concrete.ngrok-free.dev}
+    ports:
+      - "8046:8046"   # im LAN / Tailscale direkt erreichbar
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: bmwdrift-ngrok
+    restart: unless-stopped
+    depends_on:
+      - bmwdrift
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:?NGROK_AUTHTOKEN fehlt (siehe ~/bmwdrift/.env auf dem Server)}
+    command: http --url=${NGROK_DOMAIN:-pacifist-romp-concrete.ngrok-free.dev} bmwdrift:8046
