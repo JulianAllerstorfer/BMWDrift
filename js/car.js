@@ -182,8 +182,8 @@
   }
   // Punkt auf Front-/Heckfläche: liegt (y,z) außerhalb der Karosserie, wird z nach innen gezogen
   function faceX(y, z, lo, hi) {
-    let zz = Math.abs(z);
-    for (let k = 0; k < 60 && zz > 0 && !insideSec(section(lo), y, zz); k++) zz -= 0.004;
+    let zz = Math.max(1e-4, Math.abs(z));   // nie genau auf der Mittellinie messen: dort kippt der Innen/Außen-Test durch Rundungsfehler
+    for (let k = 0; k < 60 && zz > 1e-4 && !insideSec(section(lo), y, zz); k++) zz = Math.max(1e-4, zz - 0.004);
     for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; if (insideSec(section(m), y, zz)) lo = m; else hi = m; }
     return lo;
   }
@@ -405,6 +405,7 @@
     }
     // untere Sicke (F-/G-Modelle, steigt nach hinten an)
     if (S.swage) line(S.swage, 0.007, (p) => sidePoly(p, 'rgb(0,0,110)'));
+    for (const cr of S.creases || []) line(cr, 0.006, (p) => sidePoly(p, 'rgb(0,0,100)'));
     // Haubenlinien (V-Form zu den Nieren)
     const HV = S.hoodV;
     if (!S.domeH) colRange(HV[0], HV[1], (c, s) => {
@@ -629,6 +630,57 @@
     return pts;
   }
   const mirror = (poly) => poly.map(p => [-p[0], p[1]]).reverse();
+  // Ecken eines Polygons abrunden (r: Zahl oder Liste je Ecke)
+  function roundPoly(poly, r, seg) {
+    seg = seg || 4; const n = poly.length, out = [];
+    for (let i = 0; i < n; i++) {
+      const P = poly[i], A = poly[(i + n - 1) % n], B = poly[(i + 1) % n], ri = Array.isArray(r) ? r[i] : r;
+      const la = Math.hypot(A[0] - P[0], A[1] - P[1]), lb = Math.hypot(B[0] - P[0], B[1] - P[1]);
+      if (!ri || la < 1e-6 || lb < 1e-6) { out.push([P[0], P[1]]); continue; }
+      const ka = Math.min(ri, la * 0.45) / la, kb = Math.min(ri, lb * 0.45) / lb;
+      const a = [P[0] + (A[0] - P[0]) * ka, P[1] + (A[1] - P[1]) * ka], b = [P[0] + (B[0] - P[0]) * kb, P[1] + (B[1] - P[1]) * kb];
+      for (let q = 0; q <= seg; q++) { const u = q / seg, w0 = (1 - u) * (1 - u), w1 = 2 * u * (1 - u), w2 = u * u; out.push([w0 * a[0] + w1 * P[0] + w2 * b[0], w0 * a[1] + w1 * P[1] + w2 * b[1]]); }
+    }
+    return out;
+  }
+  function polyArea(p) { let a = 0; for (let i = 0; i < p.length; i++) { const q = p[(i + 1) % p.length]; a += p[i][0] * q[1] - q[0] * p[i][1]; } return a / 2; }
+  const ccw = (p) => polyArea(p) < 0 ? p.slice().reverse() : p;
+  // konvexes Polygon um d nach innen versetzen
+  function insetPoly(poly, d) {
+    const p = ccw(poly), n = p.length, L = [];
+    for (let i = 0; i < n; i++) {
+      const a = p[i], b = p[(i + 1) % n]; let dx = b[0] - a[0], dy = b[1] - a[1]; const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
+      L.push({ x: a[0] - dy * d, y: a[1] + dx * d, dx, dy });
+    }
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const A = L[(i + n - 1) % n], B = L[i], den = A.dx * B.dy - A.dy * B.dx;
+      if (Math.abs(den) < 1e-9) { out.push([B.x, B.y]); continue; }
+      const t = ((B.x - A.x) * B.dy - (B.y - A.y) * B.dx) / den;
+      let qx = A.x + A.dx * t, qy = A.y + A.dy * t;
+      // spitze Ecken nicht zu langen Zacken ausziehen
+      const ex = qx - p[i][0], ey = qy - p[i][1], el = Math.hypot(ex, ey), mx = Math.abs(d) * 2;
+      if (el > mx) { qx = p[i][0] + ex / el * mx; qy = p[i][1] + ey / el * mx; }
+      out.push([qx, qy]);
+    }
+    return out;
+  }
+  // Ausdehnung eines Polygons entlang Achse ax (0 oder 1) an der Stelle v der anderen Achse
+  function spanAt(poly, v, ax) {
+    const o = 1 - ax, q = [];
+    for (let i = 0; i < poly.length; i++) { const a = poly[i], b = poly[(i + 1) % poly.length]; if ((a[o] <= v && b[o] > v) || (b[o] <= v && a[o] > v)) q.push(a[ax] + (v - a[o]) / (b[o] - a[o]) * (b[ax] - a[ax])); }
+    return q.length >= 2 ? [Math.min(...q), Math.max(...q)] : null;
+  }
+  // Linienzug -> Vierecke der Breite w (für Leuchtbänder, Zierlinien)
+  function strokeQuads(pts, w) {
+    const out = [], h = w / 2;
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const A = pts[i], B = pts[i + 1]; let dz = B[0] - A[0], dy = B[1] - A[1]; const l = Math.hypot(dz, dy) || 1; dz /= l; dy /= l;
+      const nz = -dy * h, ny = dz * h;
+      out.push([[A[0] + nz - dz * h, A[1] + ny - dy * h], [B[0] + nz + dz * h, B[1] + ny + dy * h], [B[0] - nz + dz * h, B[1] - ny + dy * h], [A[0] - nz - dz * h, A[1] - ny - dy * h]]);
+    }
+    return out;
+  }
   // Position + Normale auf der Front/Heckfläche
   function facePose(where, y, z, off, eps) {
     const f = where === 'F' ? frontX : rearX, sg = where === 'F' ? 1 : -1;
@@ -641,6 +693,12 @@
     return { p, n };
   }
   function orientTo(obj, n) { obj.quaternion.setFromUnitVectors(new T.Vector3(0, 0, 1), n); }
+  // wie orientTo, aber die Oberkante bleibt waagrecht (Schriftzüge und Logos stehen gerade)
+  function orientUp(obj, n) {
+    const z = n.clone().normalize(), x = new T.Vector3(0, 1, 0).cross(z);
+    if (x.lengthSq() < 1e-6) return orientTo(obj, n);
+    x.normalize(); obj.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(x, z.clone().cross(x), z));
+  }
 
   // ---------- Texturen (Kennzeichen, Logo, Schriftzug) ---------------------
   function plateTexture(text) {
@@ -986,6 +1044,10 @@
       housing: real(0x3a414a, 0.35, 0.7),
       headChrome: real(0xb9c0c8, 0.32, 1),
       headDark: real(0x24282e, 0.45, 0.2),
+      headBlack: real(0x15171b, 0.3, 0.35),
+      ferric: real(0x6c7178, 0.3, 0.85),
+      satin: real(0xb4b9bf, 0.3, 0.9),
+      mesh: real(0x08090a, 0.8, 0),
       lens: real(0x2a3038, 0.03, 0.4, { envMapIntensity: 1.5 }),
       headGlass: filmic(new T.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, roughness: 0.02, metalness: 0, envMap: envMap(), envMapIntensity: 2.5, depthWrite: false, side: T.DoubleSide }), 'hg'),
       slat: real(0x202226, 0.4, 0.1),
@@ -994,6 +1056,7 @@
       tail: new T.MeshBasicMaterial({ color: 0xa50e17, side: T.DoubleSide }),
       tailInner: new T.MeshBasicMaterial({ color: 0xd8202a, side: T.DoubleSide }),
       tailDark: new T.MeshBasicMaterial({ color: 0x4a080c, side: T.DoubleSide }),
+      tailDeep: new T.MeshBasicMaterial({ color: 0x7c0a12, side: T.DoubleSide }),
       tailClear: real(0xc9ccd2, 0.06, 0.6),
       amber: new T.MeshBasicMaterial({ color: 0xf29a1e, side: T.DoubleSide }),
       fog: new T.MeshBasicMaterial({ color: 0xfff6dc, side: T.DoubleSide }),
@@ -1003,6 +1066,17 @@
     };
     paint.color.setHex(cfg.paint);
     const MR = (p, sd) => sd > 0 ? p : mirror(p);
+    const matOf = (n) => n === 'paint' ? paint : (mats[n] || mats.trim);
+    // frei definierte Zusatzteile: { p: Polygon, mat, off, both (spiegeln), round, line: Breite (p ist dann ein Linienzug) }
+    const addDecals = (grp, list, where) => {
+      for (const d of list || []) {
+        const polys = d.line ? strokeQuads(d.p, d.line) : [d.round ? roundPoly(d.p, d.round) : d.p];
+        for (const q of polys) for (const sd of (d.both === false ? [1] : [1, -1])) {
+          if (where === 'S') grp.add(flatDecal(q, 'S', d.off || 0.004, matOf(d.mat), { side: sd, maxLen: d.maxLen || 0.025 }));
+          else grp.add(flatDecal(MR(q, sd), where, d.off || 0.006, matOf(d.mat), { maxLen: d.maxLen || 0.025 }));
+        }
+      }
+    };
 
     // --- Karosserie ---
     const bg = buildBodyGeometry();
@@ -1029,21 +1103,22 @@
     const F = new T.Group(); bodyG.add(F);
     const K = SP.kidney;
     if (K) for (const sd of [1, -1]) {
-      const fr = 0.013;
-      const outer = roundRect(K.z[0], K.z[1], K.y[0], K.y[1], K.r);
-      const inner = roundRect(K.z[0] + fr, K.z[1] - fr, K.y[0] + fr, K.y[1] - fr, K.r.map(r => Math.max(0.004, r - fr)));
+      const fr = K.frame || 0.013, kr = K.round != null ? K.round : 0.022;
+      // Form: frei als Polygon (rechte Niere, z >= 0) oder abgerundetes Rechteck
+      const outer = K.poly ? roundPoly(ccw(K.poly), kr, 5) : roundRect(K.z[0], K.z[1], K.y[0], K.y[1], K.r);
+      const inner = K.poly ? roundPoly(insetPoly(K.poly, fr), Math.max(0.004, (Array.isArray(kr) ? kr[0] : kr) - fr * 0.7), 5)
+        : roundRect(K.z[0] + fr, K.z[1] - fr, K.y[0] + fr, K.y[1] - fr, K.r.map(r => Math.max(0.004, r - fr)));
       const o = MR(outer, sd), ii = MR(inner, sd);
       const sh = shapeOf(o); sh.holes.push(shapeOf(ii.slice().reverse()));
-      F.add(solidDecal(sh, 0.026, 'F', -0.006, mats.chrome, { maxLen: 0.03 }));
+      F.add(solidDecal(sh, K.depth || 0.026, 'F', -0.006, matOf(K.frameMat || 'chrome'), { maxLen: 0.03 }));
       F.add(flatDecal(ii, 'F', 0.006, mats.dark, { maxLen: 0.03 }));
-      const n = K.slats, w0 = K.z[0] + fr + 0.012, w1 = K.z[1] - fr - 0.012;
+      let z0 = 1e9, z1 = -1e9; for (const q of inner) { z0 = Math.min(z0, q[0]); z1 = Math.max(z1, q[0]); }
+      const n = K.slats, w0 = z0 + 0.012, w1 = z1 - 0.012, bw = K.slatW || 0.0032;
       for (let k = 0; k < n; k++) {
         const z = w0 + (w1 - w0) * k / Math.max(1, n - 1), zz = sd * z;
-        // Stäbe folgen der Rundung unten außen
-        const fo = (z - K.z[0]) / (K.z[1] - K.z[0]);
-        const yb = K.y[0] + fr + 0.004 + Math.max(0, fo - 0.6) * K.r[1] * 1.6;
-        const bar = roundRect(zz - 0.0032, zz + 0.0032, yb, K.y[1] - fr - 0.005, [0.002, 0.002, 0.002, 0.002], 2);
-        F.add(solidDecal(shapeOf(bar), 0.014, 'F', 0.0, mats[K.slatMat], { maxLen: 0.04 }));
+        const sp = spanAt(inner, z, 1); if (!sp || sp[1] - sp[0] < 0.02) continue;   // Stäbe folgen dem Umriss
+        const bar = roundRect(zz - bw, zz + bw, sp[0] + 0.004, sp[1] - 0.004, [0.002, 0.002, 0.002, 0.002], 2);
+        F.add(solidDecal(shapeOf(bar), 0.014, 'F', 0.0, matOf(K.slatMat), { maxLen: 0.04 }));
       }
     }
     // Kühlergrill (Nicht-BMW): Chromrahmen, dunkles Gitter, waagrechte Stäbe
@@ -1071,7 +1146,7 @@
       if (!OVAL_TEX) OVAL_TEX = ovalTexture(false);
       const pose = facePose(where, o[0], 0, o[3] || 0.012, 0.02);
       const m = new T.Mesh(new T.PlaneGeometry(o[1], o[2]), new T.MeshBasicMaterial({ map: OVAL_TEX, transparent: true }));
-      m.position.copy(pose.p); orientTo(m, pose.n); return m;
+      m.position.copy(pose.p); orientUp(m, pose.n); return m;
     };
     if (SP.oval && SP.oval.f) F.add(ovalAt('F', SP.oval.f));
     // Scheinwerfer
@@ -1081,13 +1156,13 @@
       const cz = H.poly.reduce((a, p) => a + p[0], 0) / H.poly.length, cy = H.poly.reduce((a, p) => a + p[1], 0) / H.poly.length;
       const border = H.poly.map(p => { const dz = p[0] - cz, dy = p[1] - cy, l = Math.hypot(dz, dy * 3) || 1; return [p[0] + dz / l * 0.007, p[1] + dy * 3 / l * 0.007]; });
       F.add(flatDecal(MR(border, sd), 'F', 0.003, mats.dark, { maxLen: 0.025 }));
-      F.add(solidDecal(shapeOf(hp), 0.01, 'F', -0.002, mats.headChrome, { maxLen: 0.025 }));
+      F.add(solidDecal(shapeOf(hp), 0.01, 'F', -0.002, H.dark ? mats.headBlack : mats.headChrome, { maxLen: 0.025 }));
       for (const [z, y, r] of H.lenses) {
         const p0 = facePose('F', y, sd * z, 0.009);
-        const cup = new T.Mesh(new T.CircleGeometry(r, H.hex ? 6 : 32), mats.headDark);
+        const cup = new T.Mesh(new T.CircleGeometry(r, H.hex ? 6 : 32), H.dark ? mats.housing : mats.headDark);
         cup.position.copy(p0.p); orientTo(cup, p0.n); F.add(cup); headObjs.push(cup);
         const p1 = facePose('F', y, sd * z, 0.011);
-        const bowl = new T.Mesh(new T.CircleGeometry(r * 0.8, 32), mats.reflector);
+        const bowl = new T.Mesh(new T.CircleGeometry(r * (H.bowl || 0.8), 32), mats.reflector);
         bowl.position.copy(p1.p); orientTo(bowl, p1.n); F.add(bowl);
         const lens = new T.Mesh(new T.SphereGeometry(r * 0.48, 18, 10), mats.lens);
         lens.position.copy(p1.p); lens.scale.set(1, 1, 0.45); orientTo(lens, p1.n); F.add(lens);
@@ -1104,7 +1179,7 @@
         for (let i = 0; i + 1 < pts.length; i++) {
           const A = pts[i], B = pts[i + 1];
           let dz = B[0] - A[0], dy = B[1] - A[1]; const l = Math.hypot(dz, dy); dz /= l; dy /= l;
-          const w = 0.0055, nz = -dy * w, ny = dz * w;
+          const w = H.drlW || 0.0055, nz = -dy * w, ny = dz * w;
           F.add(flatDecal([[A[0] + nz - dz * w, A[1] + ny - dy * w], [B[0] + nz + dz * w, B[1] + ny + dy * w], [B[0] - nz + dz * w, B[1] - ny + dy * w], [A[0] - nz - dz * w, A[1] - ny - dy * w]], 'F', 0.016, mats.angel, { maxLen: 0.02 }));
         }
       }
@@ -1114,19 +1189,22 @@
     }
     // Lufteinlässe, Nebelscheinwerfer
     const IN = SP.intake;
-    F.add(flatDecal(roundRect(IN.center[0], IN.center[1], IN.center[2], IN.center[3], [0.03, 0.03, 0.045, 0.045], 5), 'F', 0.003, mats.dark));
-    for (const y of IN.bars) F.add(flatDecal([[IN.center[0] + 0.02, y], [IN.center[1] - 0.02, y], [IN.center[1] - 0.02, y + 0.012], [IN.center[0] + 0.02, y + 0.012]], 'F', 0.006, mats.trim));
+    // Mitte: frei als Polygon (ganze Breite) oder abgerundetes Rechteck
+    const cPoly = IN.centerPoly ? roundPoly(IN.centerPoly, IN.centerRound != null ? IN.centerRound : 0.025) : roundRect(IN.center[0], IN.center[1], IN.center[2], IN.center[3], [0.03, 0.03, 0.045, 0.045], 5);
+    F.add(flatDecal(cPoly, 'F', 0.003, mats.dark));
+    for (const y of IN.bars) { const sp = spanAt(cPoly, y + 0.006, 0); if (sp) F.add(flatDecal([[sp[0] + 0.02, y], [sp[1] - 0.02, y], [sp[1] - 0.02, y + 0.012], [sp[0] + 0.02, y + 0.012]], 'F', 0.006, mats.trim)); }
     for (const sd of [1, -1]) {
-      const pocket = roundRect(IN.pocket[0], IN.pocket[1], IN.pocket[2], IN.pocket[3], [0.03, 0.04, 0.03, 0.03], 5);
-      F.add(flatDecal(MR(pocket, sd), 'F', 0.003, mats.dark));
+      const pocket = IN.pocketPoly ? roundPoly(IN.pocketPoly, IN.pocketRound != null ? IN.pocketRound : 0.025) : IN.pocket ? roundRect(IN.pocket[0], IN.pocket[1], IN.pocket[2], IN.pocket[3], [0.03, 0.04, 0.03, 0.03], 5) : null;
+      if (pocket) F.add(flatDecal(MR(pocket, sd), 'F', 0.003, mats.dark));
       if (IN.fog) {
         const p1 = facePose('F', IN.fog[1], sd * IN.fog[0], 0.008);
         const fl = new T.Mesh(new T.CircleGeometry(IN.fog[2], 24), mats.reflector); fl.position.copy(p1.p); orientTo(fl, p1.n); F.add(fl);
         const fr2 = new T.Mesh(new T.RingGeometry(IN.fog[2] * 0.92, IN.fog[2] * 1.08, 24), mats.headDark); fr2.position.copy(p1.p).addScaledVector(p1.n, 0.001); orientTo(fr2, p1.n); F.add(fr2);
         const fb = new T.Mesh(new T.CircleGeometry(IN.fog[2] * 0.4, 16), mats.fog); fb.position.copy(p1.p).addScaledVector(p1.n, 0.002); orientTo(fb, p1.n); F.add(fb);
       }
-      if (IN.pocketBar) { const y = IN.pocketBar; F.add(flatDecal(MR([[IN.pocket[0] + 0.015, y], [IN.pocket[1] - 0.02, y + 0.02], [IN.pocket[1] - 0.02, y + 0.034], [IN.pocket[0] + 0.015, y + 0.014]], sd), 'F', 0.006, mats.trim)); }
+      if (IN.pocketBar && pocket) { const y = IN.pocketBar, sp = spanAt(pocket, y + 0.01, 0); if (sp) F.add(flatDecal(MR([[sp[0] + 0.015, y], [sp[1] - 0.02, y + 0.02], [sp[1] - 0.02, y + 0.034], [sp[0] + 0.015, y + 0.014]], sd), 'F', 0.006, mats.trim)); }
     }
+    addDecals(F, SP.frontDecals, 'F');
     // Stoßleiste vorn (E46: dunkle Schutzleiste quer über die Stoßstange, Kennzeichen sitzt darauf)
     if (SP.strip) {
       const st = SP.strip.f, stripMat = real(0x111214, 0.75, 0, { envMapIntensity: 0.4 });
@@ -1152,9 +1230,11 @@
     if (SP.roundelY != null) {
       const pose = facePose('F', SP.roundelY, 0, SP.domeH ? 0.008 : 0.004, 0.03);
       const rd = new T.Mesh(new T.CircleGeometry(0.038, 32), new T.MeshBasicMaterial({ map: ROUNDEL_TEX }));
-      rd.position.copy(pose.p); orientTo(rd, pose.n); F.add(rd);
+      rd.position.copy(pose.p); orientUp(rd, pose.n); F.add(rd);
     }
 
+    // Grundfarbe der Rückleuchten: dunkel getönt, tiefrot (LED-Leuchten mit hellen Bändern) oder klassisch rot
+    const tailBase = SP.tail.dark ? mats.tailDark : SP.tail.deep ? mats.tailDeep : mats.tail;
     // --- Seite ---
     for (const sd of [1, -1]) {
       const mg = new T.Group();
@@ -1164,7 +1244,7 @@
       ms.quadraticCurveTo(0.072, -0.035, 0.0, -0.055); ms.closePath();
       const mgeo = new T.ExtrudeGeometry(ms, { depth: 0.17, bevelEnabled: true, bevelThickness: 0.022, bevelSize: 0.014, bevelSegments: 3, curveSegments: 10 });
       mgeo.translate(0, 0, 0.035);
-      const housing = new T.Mesh(mgeo, paint);
+      const housing = new T.Mesh(mgeo, SP.mirrorCap ? matOf(SP.mirrorCap) : paint);
       const mglass = new T.Mesh(new T.PlaneGeometry(0.16, 0.085), mats.glass);
       mglass.rotation.y = -Math.PI / 2; mglass.position.set(-0.066, 0.004, 0.12);
       const foot = new T.Mesh(new T.BoxGeometry(0.1, 0.05, 0.07), mats.trim);
@@ -1189,9 +1269,13 @@
         bodyG.add(flatDecal(roundRect(mx - 0.01, mx + 0.01, my - 0.0045, my + 0.0045, [0.004, 0.004, 0.004, 0.004], 2), 'S', 0.0065, mats.amber, { side: sd }));
       }
       // Rückleuchten-Seitenteil
-      bodyG.add(flatDecal(SP.tail.side, 'S', 0.006, SP.tail.dark ? mats.tailDark : mats.tail, { side: sd, maxLen: 0.012 }));
-      bodyG.add(flatDecal(SP.tail.sideIn, 'S', 0.009, mats.tailInner, { side: sd, maxLen: 0.012 }));
+      bodyG.add(flatDecal(insetPoly(SP.tail.side, -0.006), 'S', 0.0045, mats.dark, { side: sd, maxLen: 0.012 }));
+      bodyG.add(flatDecal(SP.tail.side, 'S', 0.006, tailBase, { side: sd, maxLen: 0.012 }));
+      if (SP.tail.sideIn) bodyG.add(flatDecal(SP.tail.sideIn, 'S', 0.009, mats.tailInner, { side: sd, maxLen: 0.012 }));
+      if (SP.tail.sideClear) bodyG.add(flatDecal(SP.tail.sideClear, 'S', 0.009, mats.tailClear, { side: sd, maxLen: 0.012 }));
+      for (const ln of SP.tail.sideLines || []) for (const q of strokeQuads(ln, SP.tail.lineW || 0.013)) bodyG.add(flatDecal(q, 'S', 0.009, mats.tailInner, { side: sd, maxLen: 0.012 }));
     }
+    addDecals(bodyG, SP.sideDecals, 'S');
     // Dachhöhe an Position (x, z)
     const roofY = (x, z) => {
       const s = section(x); let y = s.yr;
@@ -1427,33 +1511,40 @@
     }
     const TL = SP.tail, TG = SP.tailgate;
     for (const sd of [1, -1]) {
-      R.add(flatDecal(MR(TL.poly, sd), 'R', 0.004, TL.dark ? mats.tailDark : mats.tail, { maxLen: 0.02 }));
+      // dunkler Rand, damit sich die Leuchte auch von rotem Lack abhebt
+      R.add(flatDecal(MR(insetPoly(TL.poly, -0.006), sd), 'R', 0.003, mats.dark, { maxLen: 0.02 }));
+      R.add(flatDecal(MR(TL.poly, sd), 'R', 0.004, tailBase, { maxLen: 0.02 }));
       for (const ip of TL.inner) R.add(flatDecal(MR(ip, sd), 'R', 0.006, mats.tailInner, { maxLen: 0.02 }));
-      if (TL.gate) R.add(flatDecal(MR(TL.gate, sd), 'R', 0.004, TL.dark ? mats.tailDark : mats.tail, { maxLen: 0.02 }));
+      if (TL.gate) R.add(flatDecal(MR(TL.gate, sd), 'R', 0.004, tailBase, { maxLen: 0.02 }));
       if (TL.ind) R.add(flatDecal(MR(TL.ind, sd), 'R', 0.007, mats.tailClear, { maxLen: 0.02 }));
-      R.add(flatDecal(MR(TL.rev, sd), 'R', 0.007, mats.tailClear, { maxLen: 0.02 }));
+      if (TL.rev) R.add(flatDecal(MR(TL.rev, sd), 'R', 0.007, mats.tailClear, { maxLen: 0.02 }));
+      // Leuchtbänder (LED-L-Form) als Linienzüge
+      for (const ln of TL.lines || []) for (const q of strokeQuads(ln, TL.lineW || 0.013)) R.add(flatDecal(MR(q, sd), 'R', 0.0065, mats.tailInner, { maxLen: 0.02 }));
+      // Fuge der Heckklappe quer durch die Leuchte
+      if (TL.split) { const sp = spanAt(TL.poly, TL.split, 1); if (sp) R.add(flatDecal(MR([[TL.split - 0.003, sp[0]], [TL.split + 0.003, sp[0]], [TL.split + 0.003, sp[1]], [TL.split - 0.003, sp[1]]], sd), 'R', 0.008, mats.dark, { maxLen: 0.02 })); }
       R.add(flatDecal(MR([[TG.half - 0.003, TG.y0], [TG.half + 0.003, TG.y0], [TG.half + 0.003, TG.y1], [TG.half - 0.003, TG.y1]], sd), 'R', 0.002, mats.dark, { maxLen: 0.02 }));
     }
     R.add(flatDecal([[-TG.half, TG.y0 - 0.003], [TG.half, TG.y0 - 0.003], [TG.half, TG.y0 + 0.003], [-TG.half, TG.y0 + 0.003]], 'R', 0.002, mats.dark));
     if (SP.chromeBar) R.add(flatDecal([[-TG.half + 0.02, SP.chromeBar[0]], [TG.half - 0.02, SP.chromeBar[0]], [TG.half - 0.02, SP.chromeBar[1]], [-TG.half + 0.02, SP.chromeBar[1]]], 'R', 0.004, mats.chrome));
     const pr = SP.plateR;
-    R.add(flatDecal(roundRect(-0.29, 0.29, pr[0] - 0.015, pr[1] + 0.015, [0.02, 0.02, 0.02, 0.02], 4), 'R', 0.002, mats.trim));
+    if (!SP.plateBare) R.add(flatDecal(roundRect(-0.29, 0.29, pr[0] - 0.015, pr[1] + 0.015, [0.02, 0.02, 0.02, 0.02], 4), 'R', 0.002, mats.trim));
     R.add(flatDecal([[-0.26, pr[0]], [0.26, pr[0]], [0.26, pr[1]], [-0.26, pr[1]]], 'R', 0.006, rearPlateMat, { uv: true }));
     {
       if (SP.roundelR != null) {
         const pose = facePose('R', SP.roundelR, 0, 0.004);
         const rd = new T.Mesh(new T.CircleGeometry(0.036, 32), new T.MeshBasicMaterial({ map: ROUNDEL_TEX }));
-        rd.position.copy(pose.p); orientTo(rd, pose.n); R.add(rd);
+        rd.position.copy(pose.p); orientUp(rd, pose.n); R.add(rd);
       }
       if (SP.oval && SP.oval.r) R.add(ovalAt('R', SP.oval.r));
       for (const bd of SP.badges) {
         const txt = (cfg.badge && bd === SP.badges[0]) ? cfg.badge : bd.t;   // Typenschild passend zum Motor (z. B. 330d)
         const bt = new T.MeshBasicMaterial({ map: badgeTexture(txt, 256, 64, bd.font), transparent: true });
         const bm = new T.Mesh(new T.PlaneGeometry(bd.w, 0.03), bt);
-        const p1 = facePose('R', bd.y, bd.z, 0.004); bm.position.copy(p1.p); orientTo(bm, p1.n); R.add(bm);
+        const p1 = facePose('R', bd.y, bd.z, 0.004); bm.position.copy(p1.p); orientUp(bm, p1.n); R.add(bm);
       }
     }
     R.add(flatDecal(SP.diffuser, 'R', 0.003, mats.trim));
+    addDecals(R, SP.rearDecals, 'R');
     const rf = SP.reflectors;
     for (const sd of [1, -1]) R.add(flatDecal(MR([[rf[0], rf[2]], [rf[1], rf[2]], [rf[1], rf[3]], [rf[0], rf[3]]], sd), 'R', 0.004, mats.tail));
     // Auspuff
@@ -1594,6 +1685,7 @@
         mats.tail.color.setHex(on ? 0xff2633 : 0xa50e17);
         mats.tailInner.color.setHex(on ? 0xff6a6a : 0xd8202a);
         mats.tailDark.color.setHex(on ? 0xc4141e : 0x4a080c);
+        mats.tailDeep.color.setHex(on ? 0xf01c2a : 0x7c0a12);
       },
       update(st) {
         for (const w of wheels) {
