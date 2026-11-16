@@ -14,7 +14,18 @@ jobs:
     # Läuft auf dem eigenen Server (self-hosted Runner mit Label "bmwdrift")
     runs-on: [self-hosted, bmwdrift]
     steps:
-      - uses: actions/checkout@v4
+      - name: Code holen
+        # ohne externe Action, nur git
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          git init -q .
+          git remote remove origin 2>/dev/null || true
+          git remote add origin "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git"
+          git fetch -q --depth 1 origin "${{ github.sha }}"
+          git checkout -q --force FETCH_HEAD
+          git clean -qffdx
+          git remote remove origin
 
       - name: Image bauen und Container neu starten
         # Der ngrok-Token liegt nur auf dem Server in ~/bmwdrift/.env, nicht im Repo
