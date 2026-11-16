@@ -907,7 +907,7 @@
         (wheel.gasAx < 0 ? '<br><b>Pedale noch nicht eingerichtet</b> – auf „EINRICHTEN“ klicken.' : '');
     }
     if (window.FFB) {
-      txt += '<br>Force Feedback: ' + (FFB.connected ? '✅ ' + esc(FFB.name) :
+      txt += '<br>Force Feedback: ' + (FFB.connected ? (FFB.error ? '⚠️ ' : '✅ ') + esc(FFB.name) + ' <small>(' + esc(FFB.diag) + ')</small>' + (FFB.error ? '<br>Fehler: ' + esc(FFB.error) : '') :
         FFB.unsupported ? esc(FFB.unsupported) + ' wird nicht unterstützt (nur G25/G27/G29/G923 PS/DFGT)' :
         !FFB.supported() ? 'geht nur in Chrome/Edge (localhost oder https)' : FFB.error ? esc(FFB.error) : 'nicht verbunden – auf „VERBINDEN“ klicken');
       const fb = FFB.connected ? 'TESTEN' : 'VERBINDEN';
@@ -920,25 +920,38 @@
   // im Drift zieht das Lenkrad von selbst in die Gegenlenk-Richtung. Dazu Dämpfung, Anschlag am Lenkwinkel und Stöße.
   const ffb = { prev: null, joltT: 0, joltA: 0, flip: false, testT: 0 };
   function ffbJolt(a, ms) { if (a > ffb.joltA || ffb.joltT <= 0) ffb.joltA = Math.min(1, a); ffb.joltT = Math.max(ffb.joltT, ms / 1000); }
+  // Logitech-Räder reagieren erst ab ca. 7 % Kraft (Totzone) – kleine Kräfte darum darüber heben, sonst spürt man nichts
+  function ffbDead(f) {
+    const a = Math.min(1, Math.abs(f)), D = 0.07, E = 0.02;
+    return Math.sign(f) * (a < E ? D * a / E : D + (1 - D) * (a - E) / (1 - E));
+  }
   function ffbFrame(dt, p) {
     if (!window.FFB || !FFB.connected) return;
+    // Test geht immer, auch wenn das Lenkrad (noch) nicht über die Gamepad-API sichtbar ist
+    if (ffb.testT > 0) {
+      ffb.testT -= dt || 1 / 60;
+      const t = (ffb.testT > 0.7 ? 1 : -1) * 0.6;                          // erst rechts, dann links
+      FFB.set(wheel.ffbInv ? -t : t);
+      return;
+    }
     const k = wheel.ffb / 100;
-    if (!p || wheel.mode === 'off' || (k <= 0 && ffb.testT <= 0)) { ffb.prev = null; FFB.set(0); return; }
+    if (!p || wheel.mode === 'off' || k <= 0) { ffb.prev = null; FFB.set(0); return; }
     const pos = (wAx(p, wheel.steerAx) - wheel.steerC) * wheel.steerSign;   // 900°-Bereich, + = rechts
     const vel = ffb.prev == null || dt <= 0 ? 0 : (pos - ffb.prev) / dt; ffb.prev = pos;
     const ps = pos * 900 / wheel.range;                                      // ±1 = eingestellter Lenkwinkel
     let f = 0, lock = 0;
-    if (ffb.testT > 0) { ffb.testT -= dt; f = ffb.testT > 0.7 ? 0.45 : -0.45; }   // Test: erst rechts, dann links
-    else if (mode === 'drive') {
+    if (mode === 'drive') {
       const spd = phys.speed, sp = Math.min(1, spd / 10);
       const x = Math.abs(phys.aF || 0) / 0.1, sat = x * Math.exp(1 - x);   // Spitze bei ca. 6° Schräglauf
-      f += Math.sign(phys.aF || 0) * sat * 0.6 * sp * (0.6 + 0.4 * Math.min(1, spd / 30)) * (phys.u < 0 ? 0.3 : 1);
-      f -= ps * 0.12 * sp;                                                   // etwas Grund-Rückstellung
+      f += Math.sign(phys.aF || 0) * sat * 0.8 * sp * (0.6 + 0.4 * Math.min(1, spd / 30)) * (phys.u < 0 ? 0.3 : 1);
+      f -= ps * (0.12 + 0.3 * sp);                                           // Rückstellung (auch im Stand etwas)
       f -= vel * (0.06 + 0.12 * (1 - sp));                                   // Dämpfung (im Stand schwerer)
       if (ffb.joltT > 0) { ffb.joltT -= dt; ffb.flip = !ffb.flip; f += (ffb.flip ? 1 : -1) * ffb.joltA * 0.5; }
       if (Math.abs(ps) > 1) lock = -Math.sign(ps) * Math.min(1, (Math.abs(ps) - 1) * 10);   // Anschlag
+    } else {
+      f -= ps * 0.3 + vel * 0.05;                                            // Garage/Menü: sanfte Zentrierung statt schlaffem Lenkrad
     }
-    f = f * (ffb.testT > 0 ? Math.max(k, 0.5) : k) + lock * Math.max(k, 0.6);
+    f = ffbDead(f * k + lock * Math.max(k, 0.6));
     FFB.set(wheel.ffbInv ? -f : f);
   }
   function wheelFrame(dt) {

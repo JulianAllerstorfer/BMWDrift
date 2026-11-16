@@ -17,17 +17,37 @@
     0xc24f: 'G29', 0xc260: 'G29', 0xc266: 'G923', 0xc267: 'G923', 0xca03: 'MOMO', 0xca04: 'Formula Vibration' };
   const HIDPP = { 0xc261: 'G920', 0xc262: 'G920', 0xc26d: 'G923 (Xbox)', 0xc26e: 'G923 (Xbox)' };
 
-  const st = { dev: null, name: '', busy: false, lastByte: -1, lastSend: 0, error: '', unsupported: '' };
+  const st = { dev: null, name: '', busy: false, lastByte: -1, lastSend: 0, error: '', unsupported: '', outId: 0, outLen: 7, sent: 0, failed: 0 };
   const supported = () => typeof navigator !== 'undefined' && !!navigator.hid && window.isSecureContext;
 
+  // Output-Report (ID und Länge) aus der Gerätebeschreibung lesen statt fest 0 / 7 Bytes anzunehmen –
+  // passt die Länge nicht genau, lehnt der Browser jeden Befehl ab und das Lenkrad bleibt stumm.
+  function findOut(dev) {
+    const walk = (cols) => {
+      for (const c of cols || []) {
+        for (const r of c.outputReports || []) {
+          const bits = (r.items || []).reduce((a, it) => a + (it.reportSize || 0) * (it.reportCount || 0), 0);
+          if (bits >= 56) return { id: r.reportId || 0, len: Math.ceil(bits / 8) };
+        }
+        const sub = walk(c.children); if (sub) return sub;
+      }
+      return null;
+    };
+    return walk(dev.collections) || { id: 0, len: 7 };
+  }
   function cmd(bytes) {
     if (!st.dev || !st.dev.opened) return Promise.resolve();
-    const d = new Uint8Array(7); d.set(bytes);
-    return st.dev.sendReport(0, d).catch((e) => { st.error = String(e && e.message || e); });
+    const d = new Uint8Array(Math.max(7, st.outLen)); d.set(bytes);
+    return st.dev.sendReport(st.outId, d)
+      .then(() => { st.sent++; st.error = ''; })
+      .catch((e) => { st.failed++; st.error = String(e && e.message || e); console.warn('[FFB]', st.error); });
   }
   async function init(dev) {
     if (!dev.opened) await dev.open();
+    const out = findOut(dev);
     st.dev = dev; st.name = CLASSIC[dev.productId] || dev.productName || 'Logitech'; st.lastByte = -1; st.error = '';
+    st.outId = out.id; st.outLen = out.len; st.sent = 0; st.failed = 0;
+    console.info('[FFB]', st.name, 'PID', dev.productId.toString(16), 'Report-ID', st.outId, 'Länge', st.outLen);
     await cmd([0xf5]);   // eingebaute Rückstellfeder aus, die Kräfte kommen jetzt vom Spiel
     await cmd([0x13]);   // Kraft in Slot 1 stoppen
   }
@@ -77,6 +97,8 @@
     get connected() { return !!(st.dev && st.dev.opened); },
     get name() { return st.name; },
     get error() { return st.error; },
-    get unsupported() { return st.unsupported; }
+    get unsupported() { return st.unsupported; },
+    // Kurzinfo für die Statuszeile im SETUP (hilft bei der Fehlersuche)
+    get diag() { return st.dev ? 'PID ' + st.dev.productId.toString(16) + ' · Report ' + st.outId + '/' + st.outLen + ' B · gesendet ' + st.sent + (st.failed ? ' · fehlgeschlagen ' + st.failed : '') : ''; }
   };
 })();
