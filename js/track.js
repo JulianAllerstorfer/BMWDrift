@@ -1251,9 +1251,16 @@
       if (idx == null || idx < 0) idx = main.nearest(x, z);
       const p = S[idx]; if (BR && p.y <= 0) return 0;
       const lat = (x - p.x) * p.rx + (z - p.z) * p.rz; if (Math.abs(lat) > WALL + 1) return 0;
-      const lon = (x - p.x) * p.tx + (z - p.z) * p.tz, q = S[(idx + (lon >= 0 ? 1 : -1) + N) % N];
-      const y = p.y + (q.y - p.y) * Math.min(1, Math.abs(lon));
-      return BR ? Math.max(0, y) : y;
+      const lon = (x - p.x) * p.tx + (z - p.z) * p.tz;
+      if (BR) { const q = S[(idx + (lon >= 0 ? 1 : -1) + N) % N]; return Math.max(0, p.y + (q.y - p.y) * Math.min(1, Math.abs(lon))); }
+      // Bergpass: zum richtigen Streckenabschnitt weitergehen (auch ein paar Meter vor/hinter idx, z. B. an den Achsen)
+      let i = idx, l = lon;
+      for (let k = 0; k < 8 && (l < 0 || l >= 1); k++) {
+        i = (i + (l < 0 ? -1 : 1) + N) % N;
+        const a = S[i]; l = (x - a.x) * a.tx + (z - a.z) * a.tz;
+      }
+      const a = S[i], b = S[(i + 1) % N], f = Math.max(0, Math.min(1, l / Math.max(0.01, b.s - a.s || 1)));
+      return a.y + (b.y - a.y) * f;
     }
     // Steigung in Fahrtrichtung h (positiv = bergauf)
     function gradeAt(idx, h) {

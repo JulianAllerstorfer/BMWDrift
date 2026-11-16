@@ -1607,7 +1607,7 @@
     camState.dir.lerp(want, 1 - Math.exp(-dt * 2.2)).normalize();
     const d = camState.dir;
     const ck = car.cam || { d: 1, h: 1, look: 1 };   // großes Fahrzeug (Traktor): Kamera weiter weg / höher
-    const gY = phys.groundY || 0;
+    const gY = phys.renderY != null ? phys.renderY : (phys.groundY || 0);
     const desired = new T.Vector3(pos.x - d.x * c.d * ck.d, c.h * ck.h + lift.y * 0.5 + gY, pos.z - d.z * c.d * ck.d);   // Hebebühne: Kamera fährt etwas mit
     const lookT = new T.Vector3(pos.x + d.x * 1.6, c.look * ck.look + lift.y * 0.8 + gY, pos.z + d.z * 1.6);
     if (!camState.init) { camState.pos = desired.clone(); camState.look = lookT.clone(); camState.init = true; }
@@ -2316,9 +2316,19 @@
     const al = acc / STEP;
     const ix = prevState.x + (phys.x - prevState.x) * al, iz = prevState.z + (phys.z - prevState.z) * al;
     const ih = prevState.h + (phys.h - prevState.h) * al;
-    const gY = phys.groundY || 0;
+    // Fahrbahnhöhe an der (interpolierten) Bildposition unter Vorder- und Hinterachse -> Räder bleiben auf der Straße, kein Ruckeln
+    let gY = phys.groundY || 0, pitch = Math.atan(phys.grade || 0);
+    if (track.groundAt && (track.bridge || track.terrainH)) {
+      const hx = Math.cos(ih), hz = -Math.sin(ih), aF = car.dims.AXF, aR = car.dims.AXR;
+      const yF = track.groundAt(ix + hx * aF, iz + hz * aF, phys.trackIdx), yR = track.groundAt(ix + hx * aR, iz + hz * aR, phys.trackIdx);
+      const target = Math.atan((yF - yR) / (aF - aR));
+      phys._pitchS = phys._pitchS == null ? target : phys._pitchS + (target - phys._pitchS) * (1 - Math.exp(-dt * 25));
+      pitch = phys._pitchS;
+      gY = yR + (yF - yR) * (-aR) / (aF - aR);           // Höhe der Straße unter der Wagenmitte (Linie zwischen den Achsen)
+    }
+    phys.renderY = gY;
     car.root.position.set(ix, lift.y + gY, iz); phys.liftY = lift.y;
-    car.root.rotation.y = ih; car.root.rotation.z = Math.atan(phys.grade || 0);   // auf der Rampe Nase hoch/runter
+    car.root.rotation.y = ih; car.root.rotation.z = pitch;   // auf der Rampe / am Berg Nase hoch/runter
     const R = car.dims.WHEEL_R;
     car.update({
       frontSpin: phys.u / R * dt,
