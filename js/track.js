@@ -396,7 +396,7 @@
     // ---------- Berggelände (nur Bergpass): Höhe folgt der Straße, dazwischen und außen Bergflanken ----------
     let terrainH = null;
     if (MAP.mountain) {
-      ground.position.y = -0.4;
+      ground.position.y = -8;   // flache Grasebene weit unter der Talstraße (die Straße geht dort bis ca. -0,7 m runter)
       let bx0 = 1e9, bx1 = -1e9, bz0 = 1e9, bz1 = -1e9;
       for (const p of S) { bx0 = Math.min(bx0, p.x); bx1 = Math.max(bx1, p.x); bz0 = Math.min(bz0, p.z); bz1 = Math.max(bz1, p.z); }
       const M = 460, G = 7;
@@ -453,7 +453,7 @@
         }
         // zum Rand hin auf den flachen Boden auslaufen
         const e = Math.min(i, j, nx - 1 - i, nz - 1 - j) * G;
-        y += (-0.6 - y) * (1 - ss(0, 170, e));
+        y += (-7.8 - y) * (1 - ss(0, 170, e));
         hs[j * nx + i] = y;
       }
       terrainH = (x, z) => {
@@ -1315,7 +1315,7 @@
       start: { x: sp.x, z: sp.z, h: Math.atan2(-sp.tz, sp.tx) },
       startI,                                   // Index der Start-/Ziellinie (für die Challenge-Runde)
       crossing: cross ? { x: cross.x, z: cross.z, tx: cross.tx, tz: cross.tz, rx: cross.rx, rz: cross.rz, half: CROSS_HALF } : null,
-      spawns, ROAD, WALL, groundAt, gradeAt, ceilAt, bridge: BR,
+      spawns, ROAD, WALL, groundAt, gradeAt, ceilAt, bridge: BR, terrainH,
       sd: (x, z) => sdAll(x, z).d,
       onLift: (x, z) => inRect(MAP.lift, x, z),
       liftCenter: { x: (MAP.lift.x0 + MAP.lift.x1) / 2, z: (MAP.lift.z0 + MAP.lift.z1) / 2 },
