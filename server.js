@@ -27,6 +27,21 @@ const clientIp = (req) => {
   const fwd = String(req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || '').split(',')[0].trim();
   return (['127.0.0.1', '::1'].includes(sock) && fwd) ? cleanIp(fwd) : sock;
 };
+// Versionskennung aus dem Inhalt der Spieldateien – ändert sich nur, wenn sich am Spiel etwas ändert.
+// Der Client lädt die Seite neu, wenn er nach einem Neustart eine andere Version sieht.
+const VERSION = (() => {
+  const h = crypto.createHash('sha1');
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      if (e.name.startsWith('.') || e.name === 'node_modules') continue;
+      const f = path.join(dir, e.name);
+      if (e.isDirectory()) walk(f);
+      else if (/\.(html|js|css|png|jpe?g|json)$/i.test(e.name)) { h.update(path.relative(ROOT, f)); h.update(fs.readFileSync(f)); }
+    }
+  };
+  try { walk(ROOT); } catch (e) { h.update(String(Date.now())); }
+  return h.digest('hex').slice(0, 12);
+})();
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.json': 'application/json', '.md': 'text/plain; charset=utf-8' };
 
 function lanUrls() {
@@ -202,7 +217,7 @@ function onMessage(c, m) {
     let slot = 0; while (used.has(slot)) slot++;
     c.id = 'p' + (nextId++); c.slot = slot; c.name = clean(m.name); c.cfg = m.cfg || null; c.best = Math.max(0, +m.best || 0); c.bestCar = cleanCar(m.bestCar);
     players.set(c.id, c);
-    c.send({ t: 'welcome', id: c.id, slot, max: MAX_PLAYERS, urls: lanUrls(), players: [...players.values()].filter(p => p !== c).map(p => ({ id: p.id, slot: p.slot, name: p.name, cfg: p.cfg, total: p.total || 0, best: p.best || 0, bestCar: p.bestCar || null })), chat: chatLog.slice(-15) });
+    c.send({ t: 'welcome', id: c.id, slot, max: MAX_PLAYERS, version: VERSION, urls: lanUrls(), players: [...players.values()].filter(p => p !== c).map(p => ({ id: p.id, slot: p.slot, name: p.name, cfg: p.cfg, total: p.total || 0, best: p.best || 0, bestCar: p.bestCar || null })), chat: chatLog.slice(-15) });
     broadcast({ t: 'join', id: c.id, slot, name: c.name, cfg: c.cfg, best: c.best, bestCar: c.bestCar }, c);
     console.log(`+ ${c.name} ist beigetreten (${players.size}/${MAX_PLAYERS})`);
     if (pendingMax.has(maxKey(c))) c.send({ t: 'maxprog' });   // altes Spiel hatte den Befehl verpasst

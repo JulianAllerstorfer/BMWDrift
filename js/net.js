@@ -76,6 +76,14 @@
   function handle(m) {
     switch (m.t) {
       case 'welcome':
+        // Server wurde mit neuer Version neu gestartet → Seite neu laden (Fortschritt liegt im localStorage)
+        if (m.version && Net._version && m.version !== Net._version) {
+          Net.status = 'Neue Version – lädt neu …'; changed();
+          if (Net.onEvent) Net.onEvent('Neue Version – Seite lädt neu');
+          setTimeout(() => location.reload(), 1500);
+          return;
+        }
+        if (m.version) Net._version = m.version;
         Net.connected = true; Net.myId = m.id; Net.slot = m.slot; Net.urls = m.urls || []; Net.max = m.max;
         Net.status = 'Verbunden'; Net._retry = 0;
         for (const p of m.players) addRemote(p);
