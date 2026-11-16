@@ -142,7 +142,7 @@
   // 5er Touring (2017+): große breite Nieren mit Chromstäben, Scheinwerfer schließen an die Nieren an, sechseckige LED-Ringe,
   // Air Breather hinter dem Vorderrad, breite L-Rückleuchten bis weit in die Heckklappe, trapezförmige Endrohre.
   M.g31 = {
-    id: 'g31', name: 'G31 Touring', sub: '530d · Diesel · 2017+', engine: 'B57 Reihensechser-Diesel', diesel: true,
+    id: 'g31', name: 'G31 Touring', sub: '530d / 520d · Diesel · 2017+', engine: 'B57 Sechszylinder / B47 Vierzylinder', diesel: true,
     XF: 2.3375, XR: -2.6045, AXF: 1.4875, AXR: -1.4875, wheelR: 0.339, archR: 0.415, archCY: 0.355,
     GH_F: 0.98, GH_R: -2.552, trackHalf: 0.80,
     halfW: [[-2.6045, 0.76], [-2.59, 0.85], [-2.56, 0.895], [-2.45, 0.925], [-2.0, 0.934], [-1.4875, 0.94], [-0.9, 0.93], [0, 0.926], [0.9, 0.93], [1.4875, 0.936], [1.9, 0.926], [2.12, 0.906], [2.22, 0.88], [2.28, 0.84], [2.315, 0.78], [2.3375, 0.70]],

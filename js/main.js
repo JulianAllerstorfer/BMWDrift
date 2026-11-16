@@ -1304,10 +1304,10 @@
       camera.position.copy(spec.tvPos); camera.lookAt(c.x, cy + 0.8, c.z);
       camera.fov = T.MathUtils.clamp(2400 / Math.max(10, spec.tvPos.distanceTo(pos)) * 0.5, 14, 55);
     } else {
-      const desired = new T.Vector3(c.x - head.x * 6, 34, c.z - head.z * 6);
+      const desired = new T.Vector3(c.x - head.x * 6, 34 + cy, c.z - head.z * 6);
       if (!spec.pos) spec.pos = desired.clone();
       spec.pos.lerp(desired, 1 - Math.exp(-dt * 3));
-      camera.position.copy(spec.pos); camera.lookAt(c.x, 0, c.z); camera.fov = 50;
+      camera.position.copy(spec.pos); camera.lookAt(c.x, cy, c.z); camera.fov = 50;
     }
     camera.updateProjectionMatrix();
     const M = (window.CAR_MODELS[(r.cfg && r.cfg.model) || 'e46'] || {}).name || '';
@@ -1635,12 +1635,13 @@
 
   // ---------- Tageszeit, Licht und Bildeffekte ----------
   let todShot = null, clockMin = -1, shotSkip = false;
-  function updateWorld(dt, x, z) {
+  function updateWorld(dt, x, z, y) {
+    y = y || 0;
     const tod = todShot != null ? todShot : Sky.todFor(cfg.tod, Date.now());
     const st = track.setTime(tod);
     // Schatten & Licht folgen dem Auto bzw. der Kamera
-    track.sun.position.set(x + track.sunDir.x * 70, track.sunDir.y * 70, z + track.sunDir.z * 70);
-    track.sun.target.position.set(x, 0, z);
+    track.sun.position.set(x + track.sunDir.x * 70, y + track.sunDir.y * 70, z + track.sunDir.z * 70);
+    track.sun.target.position.set(x, y, z);
     track.clouds.rotation.y += dt * 0.004;
     smoke.mat.uniforms.tint.value.copy(st.tint);
     post.bloom = 0.24 + 0.36 * st.lamps; post.threshold = 0.86 - 0.04 * st.lamps;
@@ -2514,9 +2515,9 @@
     if (rumbleT <= 0) { rumbleT = 0.1; const sl = Math.max(0, Math.min(1, (slip - 4) / 14)); if (sl > 0.05) rumble(sl * 0.45, sl * 0.15, 130); }
 
     // Tageszeit, Schatten & Licht
-    updateWorld(dt, phys.x, phys.z);
-    headSpot.position.set(phys.x + fx * 1.6, 0.8 + lift.y, phys.z + fz * 1.6);
-    headSpot.target.position.set(phys.x + fx * 26, 0, phys.z + fz * 26);
+    updateWorld(dt, phys.x, phys.z, phys.groundY);
+    headSpot.position.set(phys.x + fx * 1.6, 0.8 + lift.y + (phys.groundY || 0), phys.z + fz * 1.6);
+    headSpot.target.position.set(phys.x + fx * 26, (phys.groundY || 0) + 26 * (phys.grade || 0), phys.z + fz * 26);
     sparks.update(dt);
     if (!copShowCam(dt)) updateCamera(dt);
   }
@@ -2617,10 +2618,10 @@
     if (mode === 'garage') { updateGarage(dt); post.bloom = 0.3; post.threshold = 0.9; draw(garageScene); }
     else if (mode === 'drive') { camera.clearViewOffset(); updateDrive(dt); draw(driveScene); }
     if (padWorkshop) { padWorkshop = false; if (mode === 'drive') toWorkshop(); }
-    else if (mode === 'pause') { netUpdate(dt); updateWorld(dt, phys.x, phys.z); draw(driveScene); }
+    else if (mode === 'pause') { netUpdate(dt); updateWorld(dt, phys.x, phys.z, phys.groundY); draw(driveScene); }
     remoteAudio();
     if (mode === 'drive' || mode === 'pause' || mode === 'spectate') remoteLift();
-    if (mode === 'spectate') { camera.clearViewOffset(); netUpdate(dt); smoke.update(dt); skids.update(); updateSpectate(dt); updateWorld(dt, camera.position.x, camera.position.z); drawMini(true); draw(driveScene); }
+    if (mode === 'spectate') { camera.clearViewOffset(); netUpdate(dt); smoke.update(dt); skids.update(); updateSpectate(dt); updateWorld(dt, camera.position.x, camera.position.z, (spec.target && spec.target.cur && spec.target.cur.gy) || 0); drawMini(true); draw(driveScene); }
   }
   function onResize() {
     renderer.setSize(innerWidth, innerHeight);

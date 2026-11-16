@@ -164,7 +164,11 @@ registerProcessor('engine-proc', EngineProc);`;
     // 530d – B57-Diesel: tiefes Grollen, Nageln, dumpfes Turbo-Rauschen, kein Abblasventil
     g31: { pipe: 0.0162, refl: 0.55, header: 0.0038, hrefl: 0.28, noise: 0.32, intake: 0.1, damp: 0.66, rasp: 0.14, gain: 0.3, tick: 0.45, muffle: 560,
       camp: [1.0, 0.88, 0.97, 0.86, 1.03, 0.9], coff: [0, 0.006, -0.004, 0.007, -0.003, 0.005], crackle: 0,
-      whistle: { base: 850, k: 2100, vol: 0.06, type: 'triangle' }, bov: null, vol: 1.05 }
+      whistle: { base: 850, k: 2100, vol: 0.06, type: 'triangle' }, bov: null, vol: 1.05 },
+    // 520d – B47-Vierzylinder-Diesel: brummiger, mehr Nageln, hellerer Turbo, weniger Bass als der Sechser
+    g31d4: { cyl: 4, pipe: 0.0142, refl: 0.56, header: 0.0035, hrefl: 0.3, noise: 0.34, intake: 0.1, damp: 0.64, rasp: 0.18, gain: 0.31, tick: 0.62, muffle: 580,
+      camp: [1.0, 0.86, 0.96, 0.84], coff: [0, 0.009, -0.006, 0.011], crackle: 0,
+      whistle: { base: 1050, k: 2400, vol: 0.05, type: 'triangle' }, bov: null, vol: 1.0 }
   };
 
   // Hupen je Fahrzeug: Grundtöne (Hz), Formant-Filter, Lautstärke

@@ -64,7 +64,11 @@
       { key: 'f31d', badge: '330d', name: '330d', code: 'N57 Reihensechser-Diesel', diesel: true,
         curve: 'diesel', maxTorque: 640, idle: 750, redline: 5000, final: 2.81, massAdd: 40 }
     ],
-    g31: [{ key: 'g31', badge: '530d', name: '530d', code: 'B57 Reihensechser-Diesel', diesel: true }],
+    g31: [
+      { key: 'g31', badge: '530d', name: '530d', code: 'B57 Reihensechser-Diesel', diesel: true },
+      { key: 'g31d4', badge: '520d', name: '520d', code: 'B47 Vierzylinder-Diesel', diesel: true,
+        curve: 'diesel', maxTorque: 450, idle: 800, redline: 4800, final: 3.15, massAdd: -70 }
+    ],
     wheelchair: [{ key: 'wheelchair', badge: '', name: "Jonny's Rollstuhl", code: 'Armkraft' }],
     rollator: [{ key: 'rollator', badge: '', name: 'Rollator', code: 'Elektromotor' }],
     tractor: [{ key: 'tractor', badge: '', name: 'Neiwirth', code: 'Vierzylinder-Turbodiesel', diesel: true }],

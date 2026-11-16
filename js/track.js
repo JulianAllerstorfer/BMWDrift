@@ -2,6 +2,7 @@
    Strecken / Maps
    - "Hakone Lane": kompakter Drift-Kurs, Werkstatt im Infield
    - "Großer Ring": lange Rennstrecke, Werkstatt + Tankstelle im Infield
+   - "Bergpass": 8,9 km über einen Berg, Serpentinen rauf und runter, echtes Höhenprofil
    Befahrbarer Bereich = Vereinigung aus Strecke, Boxengasse, Hof, Halle
    (Signed-Distance-Felder), minus Hindernisse (Zapfsäulen, Gebäude).
    ===================================================================== */
@@ -10,6 +11,64 @@
   const T = THREE;
   const ROAD = 8.0, RUNOFF = 12.6, WALL = 13.0, WALL_T = 0.5, WALL_H = 1.1;
   const PIT_HW = 6.0;
+
+  // Bergpass: Rundkurs, im Osten in Serpentinen rauf, über den Grat nach Westen, im Westen in Serpentinen runter
+  function mountainCtrl(o) {
+    o = Object.assign({ peak: 230, seed: 29 }, o || {});
+    let seed = o.seed; const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+    const pts = [];
+    const push = (x, z, y) => pts.push([x, z, y]);
+    // geschlängelt von A nach B; bulge = Ausbeulung zur Seite (Bogen über die ganze Länge)
+    function esses(ax, az, bx, bz, ya, yb, amp, lam, bulge) {
+      const L = Math.hypot(bx - ax, bz - az), tx = (bx - ax) / L, tz = (bz - az) / L, nx = -tz, nz = tx;
+      const n = Math.max(2, Math.round(L / 15));
+      let phase = rnd() * 6.28, a = amp * (0.7 + 0.6 * rnd()), l = lam * (0.8 + 0.4 * rnd()), aT = a, lT = l;
+      for (let i = 1; i <= n; i++) {
+        const s = i / n * L;
+        phase += (L / n) / l * Math.PI * 2;
+        if (rnd() < 0.06) { aT = amp * (0.55 + 0.9 * rnd()); lT = lam * (0.75 + 0.5 * rnd()); }
+        a += (aT - a) * 0.12; l += (lT - l) * 0.12;          // weich überblenden, sonst entstehen Knicke
+        const ss = (q) => { q = Math.max(0, Math.min(1, q)); return q * q * (3 - 2 * q); };
+        const env = ss(s / 70) * ss((L - s) / 70);               // weich ein- und ausblenden (kein Knick am Übergang)
+        const off = Math.sin(phase) * a * env + (bulge || 0) * (1 - Math.cos(2 * Math.PI * s / L)) / 2;
+        push(ax + tx * s + nx * off, az + tz * s + nz * off, ya + (yb - ya) * (s / L));
+      }
+    }
+    // Serpentinen: Schenkel abwechselnd in +x/-x, jede Kehre rückt um sp in zdir weiter
+    function stack(xs, zs, dir, zdir, legs, xIn, xOut, y0, y1) {
+      let x = xs, z = zs;
+      const seg = [];
+      for (let k = 0; k < legs; k++) {
+        const far = dir > 0 ? xOut : xIn, near = dir > 0 ? xIn : xOut;
+        const xe = (dir > 0 ? Math.max : Math.min)(x + dir * 120, (dir > 0 ? xOut : xIn) + (rnd() - 0.5) * 70);
+        const slant = (rnd() - 0.5) * 22;
+        seg.push({ type: 'leg', x0: x, z0: z, x1: xe, z1: z + slant });
+        z += slant; x = xe;
+        if (k < legs - 1) { const sp = 64 + rnd() * 18; seg.push({ type: 'pin', x, z, dir, sp, zdir }); z += zdir * sp; dir = -dir; }
+        void far; void near;
+      }
+      // Länge für das Höhenprofil
+      let tot = 0; for (const g of seg) tot += g.type === 'leg' ? Math.hypot(g.x1 - g.x0, g.z1 - g.z0) * 1.08 : Math.PI * g.sp / 2;
+      let s = 0; const yA = (q) => y0 + (y1 - y0) * q / tot;
+      for (const g of seg) {
+        if (g.type === 'leg') { const L = Math.hypot(g.x1 - g.x0, g.z1 - g.z0) * 1.08; esses(g.x0, g.z0, g.x1, g.z1, yA(s), yA(s + L), 9, 170, 0); s += L; }
+        else {
+          const R = g.sp / 2, L = Math.PI * R, cx = g.x, cz = g.z + g.zdir * R;
+          for (let i = 1; i <= 5; i++) { const t = i / 6, a = -Math.PI / 2 + t * Math.PI; push(cx + g.dir * Math.cos(a) * R * 1.15, cz + g.zdir * Math.sin(a) * R, yA(s + L * t)); }
+          s += L;
+        }
+      }
+      return { x, z, dir };
+    }
+    const P = o.peak;
+    push(-100, 40, 0); push(0, 40, 0); push(80, 40, 0);                 // Start/Ziel (Werkstatt nördlich davon)
+    esses(80, 40, 480, 34, 0, 4, 24, 190, 0);                          // Tal nach Osten
+    const e = stack(480, 34, 1, -1, 8, 470, 780, 4, P - 25);           // Ostflanke rauf (nach Norden)
+    esses(e.x, e.z, -480, e.z, P - 25, P - 25, 30, 230, -70);          // Grat nach Westen, nach Norden ausgebeult
+    const w = stack(-480, e.z, -1, 1, 8, -790, -480, P - 25, 4);       // Westflanke runter (nach Süden)
+    esses(w.x, w.z, -170, 40, 4, 0, 22, 180, 0);                       // Tal zurück zum Start
+    return pts;
+  }
 
   const MAPS = {
     hakone: {
@@ -46,6 +105,16 @@
       lift: { x0: -158.5, x1: -153, z0: -22.5, z1: -13 },
       gas: null, world: 1.2, standSide: -1,
       bridge: { h: 7, flat: 20, ramp: 72, span: 16, deck: 1.0 }
+    },
+    // Bergpass: Start im Tal (Werkstatt wie bei Hakone), Ostflanke in 7 Kehren rauf, über den Grat, Westflanke in 7 Kehren runter
+    mountain: {
+      id: 'mountain', name: 'Bergpass', desc: 'Bergrundkurs · 8,9 km · 14 Kehren · 200 m rauf & runter · Werkstatt', fuel: false,
+      ctrl: mountainCtrl(),
+      hall: { x0: 63, x1: 107, z0: -48, z1: -34 },
+      yard: { x0: 63, x1: 107, z0: -32, z1: -6 },
+      pit: [[86, -8], [85, 8], [79, 22], [70, 34]],
+      lift: { x0: 99.5, x1: 105, z0: -46.5, z1: -37 },
+      gas: null, world: 2.2, mountain: true
     }
   };
 
@@ -87,7 +156,8 @@
       while (dd > Math.PI) dd -= 2 * Math.PI; while (dd < -Math.PI) dd += 2 * Math.PI;
       S[i].k = dd / 8;
     }
-    return { S, len, closed };
+    const ks = []; for (let i = 0; i < n; i++) ks.push(cum[Math.min(cum.length - 1, i * 80)]);   // Bogenlänge an jedem Stützpunkt
+    return { S, len, closed, ks };
   }
 
   // ---------- Canvas-Texturen ----------
@@ -189,6 +259,28 @@
         BR = Object.assign({ upper: ci, lower: cj, x: S[ci].x, z: S[ci].z }, B);
       }
     }
+    // ---------- Bergpass: Höhenprofil aus den Stützpunkten, geglättet, kleine Kuppen und Senken ----------
+    if (MAP.mountain) {
+      const C = MAP.ctrl, K = C.length, L = path.len, ks = path.ks;
+      let k = 0;
+      const raw = new Float32Array(N);
+      for (let i = 0; i < N; i++) {
+        const s = S[i].s;
+        while (k < K - 1 && ks[k + 1] <= s) k++;
+        const s0 = ks[k], s1 = k < K - 1 ? ks[k + 1] : L, y0 = C[k][2], y1 = C[(k + 1) % K][2];
+        raw[i] = y0 + (y1 - y0) * (s - s0) / Math.max(1e-6, s1 - s0);
+      }
+      const sm = (src, r) => { const out = new Float32Array(N); let acc = 0; for (let j = -r; j <= r; j++) acc += src[(j + N) % N]; for (let i = 0; i < N; i++) { out[i] = acc / (2 * r + 1); acc += src[(i + r + 1) % N] - src[(i - r + N) % N]; } return out; };
+      const ys = sm(sm(raw, 30), 30);
+      const ss = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+      for (let i = 0; i < N; i++) {
+        const s = S[i].s, q = s < L / 2 ? s : s - L;
+        const flat = q >= 0 ? ss(240, 420, q) : ss(140, 300, -q);   // Start/Ziel und Boxeneinfahrt bleiben eben auf Talhöhe
+        S[i].y = flat * (ys[i] + 2.6 * Math.sin(s / 83) + 1.4 * Math.sin(s / 31 + 1.7));
+      }
+      for (let i = 0; i < N; i++) S[i].gy = (S[(i + 1) % N].y - S[(i - 1 + N) % N].y) / ((S[(i + 1) % N].s - S[(i - 1 + N) % N].s + L) % L || 2);
+    }
+    const ELEV = !!BR || !!MAP.mountain;
     const toon = E46.toon;
     const world = new T.Group(); scene.add(world);
     // Zebrastreifen (nur wenn die Map einen hat): Mittelpunkt auf der Strecke
@@ -288,6 +380,110 @@
     }, [260 * W, 260 * W]);
     const ground = new T.Mesh(new T.CircleGeometry(1400 * W, 64), toon(0xffffff, { map: grassTex, side: T.FrontSide }));
     ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; world.add(ground);
+
+    // ---------- Streckenraster: schnelle Abstandsabfrage zur Strecke (Gelände, Bäume) ----------
+    const CELL = 24, grid = new Map(), gk = (cx, cz) => cx * 73856 + cz;
+    for (let i = 0; i < N; i += 2) { const k = gk(Math.floor(S[i].x / CELL), Math.floor(S[i].z / CELL)); let a = grid.get(k); if (!a) grid.set(k, a = []); a.push(i); }
+    function forNear(x, z, r, fn) {
+      const c0 = Math.floor((x - r) / CELL), c1 = Math.floor((x + r) / CELL), d0 = Math.floor((z - r) / CELL), d1 = Math.floor((z + r) / CELL);
+      for (let cx = c0; cx <= c1; cx++) for (let cz = d0; cz <= d1; cz++) { const a = grid.get(gk(cx, cz)); if (a) for (const i of a) fn(i); }
+    }
+    function distFast(x, z, r) {
+      let best = r * r; forNear(x, z, r, (i) => { const dx = x - S[i].x, dz = z - S[i].z, d = dx * dx + dz * dz; if (d < best) best = d; });
+      return Math.sqrt(best);
+    }
+
+    // ---------- Berggelände (nur Bergpass): Höhe folgt der Straße, dazwischen und außen Bergflanken ----------
+    let terrainH = null;
+    if (MAP.mountain) {
+      ground.position.y = -0.4;
+      let bx0 = 1e9, bx1 = -1e9, bz0 = 1e9, bz1 = -1e9;
+      for (const p of S) { bx0 = Math.min(bx0, p.x); bx1 = Math.max(bx1, p.x); bz0 = Math.min(bz0, p.z); bz1 = Math.max(bz1, p.z); }
+      const M = 460, G = 7;
+      const gx0 = bx0 - M, gz0 = bz0 - M, nx = Math.ceil((bx1 - bx0 + 2 * M) / G) + 1, nz = Math.ceil((bz1 - bz0 + 2 * M) / G) + 1;
+      const hs = new Float32Array(nx * nz);
+      const ss = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+      const hash = (x, z) => { const h = Math.sin(x * 127.1 + z * 311.7) * 43758.5453; return h - Math.floor(h); };
+      const vnoise = (x, z) => {
+        const xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi, u = xf * xf * (3 - 2 * xf), v = zf * zf * (3 - 2 * zf);
+        const a = hash(xi, zi), b = hash(xi + 1, zi), c = hash(xi, zi + 1), d = hash(xi + 1, zi + 1);
+        return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+      };
+      const fbm = (x, z) => vnoise(x / 160, z / 160) * 0.6 + vnoise(x / 60 + 7, z / 60 + 3) * 0.28 + vnoise(x / 22 + 1, z / 22 + 9) * 0.12;
+      // grobe Stützpunkte für das Innere der Schleife
+      const coarse = []; for (let i = 0; i < N; i += 30) coarse.push(S[i]);
+      // innen/außen je Rasterzeile (Schnittpunkte mit dem Streckenpolygon)
+      const inside = new Uint8Array(nx * nz);
+      for (let j = 0; j < nz; j++) {
+        const z = gz0 + j * G, xs = [];
+        for (let i = 0; i < N; i += 2) { const a = S[i], b = S[(i + 2) % N]; if ((a.z > z) !== (b.z > z)) xs.push(a.x + (z - a.z) / (b.z - a.z) * (b.x - a.x)); }
+        xs.sort((a, b) => a - b);
+        for (let k = 0; k + 1 < xs.length; k += 2) { const i0 = Math.max(0, Math.ceil((xs[k] - gx0) / G)), i1 = Math.min(nx - 1, Math.floor((xs[k + 1] - gx0) / G)); for (let i = i0; i <= i1; i++) inside[j * nx + i] = 1; }
+      }
+      const R = 110, R2 = R * R, padR = { x0: 30, x1: 140, z0: -80, z1: 70 };
+      for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+        const x = gx0 + i * G, z = gz0 + j * G;
+        let w4s = 0, y4 = 0, w8s = 0, y8 = 0, dmin = 1e18;
+        forNear(x, z, R, (k) => {
+          const p = S[k], dx = x - p.x, dz = z - p.z, dd = dx * dx + dz * dz;
+          if (dd > R2) return;
+          if (dd < dmin) dmin = dd;
+          const f = 1 - dd / R2, d2 = dd + 1, w4 = f * f / (d2 * d2), w8 = w4 * w4 / (f * f);
+          w4s += w4; y4 += w4 * p.y; w8s += w8; y8 += w8 * p.y;
+        });
+        const d = Math.sqrt(dmin), ins = inside[j * nx + i];
+        // Fernfeld: innen weich zwischen den Straßenhöhen interpoliert + Bergrücken, außen fällt das Gelände ab
+        let wf = 0, yf = 0;
+        for (const p of coarse) { const dx = x - p.x, dz = z - p.z, w = 1 / (dx * dx + dz * dz + 400); wf += w; yf += w * p.y; }
+        yf /= wf;
+        const n = fbm(x, z);
+        let far;
+        if (ins) far = yf + 38 * ss(40, 260, d) + (n - 0.5) * 26;
+        else { const yn = w4s > 0 ? y4 / w4s : yf; far = (Math.min(yn, yf + 40)) * Math.exp(-Math.max(0, d - 30) / 260) + n * 55 * ss(60, 300, d); }
+        let y;
+        if (w8s > 0) {
+          const yRoad = y8 / w8s, yNear = y4 / w4s;
+          y = yRoad - 0.4 + (yNear - yRoad + 0.4) * ss(WALL + 3, WALL + 14, d);
+          y += (far - y) * ss(25, 140, d);
+        } else y = far;
+        // Werkstatt, Hof und Boxengasse liegen auf Talhöhe
+        if (x > padR.x0 && x < padR.x1 && z > padR.z0 && z < padR.z1) {
+          const dp = Math.min(hall.sd(x, z).d, yard.sd(x, z).d, door.sd(x, z).d, pit.sd(x, z).d);
+          y += (-0.08 - y) * (1 - ss(3, 24, dp));
+        }
+        // zum Rand hin auf den flachen Boden auslaufen
+        const e = Math.min(i, j, nx - 1 - i, nz - 1 - j) * G;
+        y += (-0.6 - y) * (1 - ss(0, 170, e));
+        hs[j * nx + i] = y;
+      }
+      terrainH = (x, z) => {
+        const fx = (x - gx0) / G, fz = (z - gz0) / G, i = Math.floor(fx), j = Math.floor(fz);
+        if (i < 0 || j < 0 || i >= nx - 1 || j >= nz - 1) return 0;
+        const u = fx - i, v = fz - j, a = hs[j * nx + i], b = hs[j * nx + i + 1], c = hs[(j + 1) * nx + i], d = hs[(j + 1) * nx + i + 1];
+        return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+      };
+      // Geometrie mit Farben nach Steilheit und Höhe (Wiese, Fels, Almwiese)
+      const pos = new Float32Array(nx * nz * 3), col = new Float32Array(nx * nz * 3), idx = new Uint32Array((nx - 1) * (nz - 1) * 6);
+      const cGrass = new T.Color(0x6aa548), cGrass2 = new T.Color(0x4f8f3d), cAlp = new T.Color(0x9fbf5a), cRock = new T.Color(0x8d8a83), cRock2 = new T.Color(0x6f6d68), cc = new T.Color();
+      for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+        const k = j * nx + i, y = hs[k];
+        pos[k * 3] = gx0 + i * G; pos[k * 3 + 1] = y; pos[k * 3 + 2] = gz0 + j * G;
+        const sx = (hs[j * nx + Math.min(nx - 1, i + 1)] - hs[j * nx + Math.max(0, i - 1)]) / (2 * G), sz = (hs[Math.min(nz - 1, j + 1) * nx + i] - hs[Math.max(0, j - 1) * nx + i]) / (2 * G);
+        const slope = Math.hypot(sx, sz), n = hash(i * 0.37, j * 0.61);
+        cc.copy(cGrass).lerp(cGrass2, n * 0.6).lerp(cAlp, ss(120, 230, y) * 0.7).lerp(n > 0.5 ? cRock : cRock2, ss(0.75, 1.15, slope));
+        col[k * 3] = cc.r; col[k * 3 + 1] = cc.g; col[k * 3 + 2] = cc.b;
+      }
+      let t = 0;
+      for (let j = 0; j < nz - 1; j++) for (let i = 0; i < nx - 1; i++) {
+        const a = j * nx + i, b = a + 1, c = a + nx, d = c + 1;
+        idx[t++] = a; idx[t++] = c; idx[t++] = b; idx[t++] = b; idx[t++] = c; idx[t++] = d;
+      }
+      const tg = new T.BufferGeometry();
+      tg.setAttribute('position', new T.BufferAttribute(pos, 3)); tg.setAttribute('color', new T.BufferAttribute(col, 3));
+      tg.setIndex(new T.BufferAttribute(idx, 1)); tg.computeVertexNormals();
+      const tm = toon(0xffffff, { vertexColors: true, side: T.FrontSide }); tm.flatShading = true;
+      const terr = new T.Mesh(tg, tm); terr.receiveShadow = true; world.add(terr);
+    }
 
     // ---------- Band-Geometrie entlang eines Pfades ----------
     function ribbon(P, o0, o1, y0, y1, vScale, mat, filter) {
@@ -398,13 +594,29 @@
         const f = new T.Mesh(g, sg > 0 ? wallFaceB : wallFaceF); f.receiveShadow = true; world.add(f);
         world.add(new T.Mesh(g, sg > 0 ? wallBackF : wallBackB));
       } else { const m = new T.Mesh(g, mat); m.receiveShadow = true; world.add(m); }
+      if (mat && mat.alphaTest) return;   // Leitplanke: keine Mauerkrone
       const tg = new T.BufferGeometry();
       tg.setAttribute('position', new T.Float32BufferAttribute(tpos, 3));
       tg.setIndex(tidx); tg.computeVertexNormals();
       world.add(new T.Mesh(tg, wallTop));
     }
-    pathWall(path, WALL, main, WALL_H, 'banner');
-    pathWall(path, -WALL, main, WALL_H, 'banner');
+    if (MAP.mountain) {
+      // Bergpass: verzinkte Leitplanke mit Pfosten und rot-weißen Leitpfosten statt Werbebanden
+      const railTex = canvasTex(256, 64, (g, w, h) => {
+        g.fillStyle = 'rgba(0,0,0,0)'; g.clearRect(0, 0, w, h);
+        g.fillStyle = '#5b5f63'; for (const x of [10, 138]) g.fillRect(x, 0, 12, h);                  // Pfosten
+        const gr = g.createLinearGradient(0, 14, 0, 40); gr.addColorStop(0, '#e3e6e8'); gr.addColorStop(0.35, '#9aa0a5'); gr.addColorStop(0.6, '#d5d9dc'); gr.addColorStop(1, '#7d8388');
+        g.fillStyle = gr; g.fillRect(0, 14, w, 26);                                                   // Planke
+        g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(0, 26, w, 2);
+        g.fillStyle = '#f4f4f2'; g.fillRect(232, 0, 10, h); g.fillStyle = '#d42a2a'; g.fillRect(232, 2, 10, 8);   // Leitpfosten
+      });
+      const railMat = lit(toon(0xffffff, { map: railTex, transparent: true, alphaTest: 0.5, side: T.DoubleSide }), 0.3);
+      pathWall(path, WALL, main, WALL_H, railMat, 16);
+      pathWall(path, -WALL, main, WALL_H, railMat, 16);
+    } else {
+      pathWall(path, WALL, main, WALL_H, 'banner');
+      pathWall(path, -WALL, main, WALL_H, 'banner');
+    }
     if (BR) buildBridge();
     pathWall(pitPath, PIT_HW + 0.25, pit, 0.8, plainWall, 8);
     pathWall(pitPath, -PIT_HW - 0.25, pit, 0.8, plainWall, 8);
@@ -855,7 +1067,7 @@
     }
 
     // ---------- Umgebung ----------
-    const distTrack = (x, z) => { let best = 1e9; for (let i = 0; i < N; i += 2) { const dx = x - S[i].x, dz = z - S[i].z; const d = dx * dx + dz * dz; if (d < best) best = d; } return Math.sqrt(best); };
+    const distTrack = (x, z) => distFast(x, z, WALL + 40);
     let cx0 = 0, cz0 = 0; for (const p of S) { cx0 += p.x; cz0 += p.z; } cx0 /= N; cz0 /= N;
     let rad = 0; for (const p of S) rad = Math.max(rad, Math.hypot(p.x - cx0, p.z - cz0));
     // Tribüne außen an der Startgeraden
@@ -904,17 +1116,20 @@
       let nc = 0, nd = 0, nb = 0, tries = 0;
       while (nc + nd + nb < COUNT && tries < 40000) {
         tries++;
-        const a = Math.random() * Math.PI * 2, r = 30 + Math.pow(Math.random(), 0.7) * (rad + 260);
-        const x = cx0 + Math.cos(a) * r * 1.15, z = cz0 + Math.sin(a) * r;
+        let x, z;
+        if (terrainH) { x = cx0 + (Math.random() - 0.5) * (rad * 2 + 500); z = cz0 + (Math.random() - 0.5) * (rad * 0.9 + 600); }
+        else { const a = Math.random() * Math.PI * 2, r = 30 + Math.pow(Math.random(), 0.7) * (rad + 260); x = cx0 + Math.cos(a) * r * 1.15; z = cz0 + Math.sin(a) * r; }
         if (distTrack(x, z) < WALL + 6) continue;
-        if (sdAll(x, z).d < 9) continue;
+        if (terrainH ? (x > 30 && x < 140 && z > -80 && z < 70 && sdAll(x, z).d < 9) : sdAll(x, z).d < 9) continue;
+        const ty = terrainH ? terrainH(x, z) : 0;
+        if (terrainH && Math.abs(terrainH(x + 3, z) - terrainH(x - 3, z)) + Math.abs(terrainH(x, z + 3) - terrainH(x, z - 3)) > 7) continue;   // kein Baum am Fels
         // Tribüne frei lassen
         const lx = (x - sp.x) * sp.tx + (z - sp.z) * sp.tz, lz = (x - sp.x) * sp.rx + (z - sp.z) * sp.rz;
         if (lx > -30 && lx < 110 && lz * (MAP.standSide || 1) > WALL && lz * (MAP.standSide || 1) < WALL + 30) continue;
         if (cross && Math.hypot(x - cross.x, z - cross.z) < 30) continue;   // Gehsteige am Zebrastreifen frei lassen
         const s = 0.7 + Math.random() * 0.8, kind = Math.random();
         q.setFromAxisAngle(up, Math.random() * 6.28);
-        m.compose(pv.set(x, 0, z), q, sv.set(s, s * (0.85 + Math.random() * 0.4), s));
+        m.compose(pv.set(x, ty - 0.3, z), q, sv.set(s, s * (0.85 + Math.random() * 0.4), s));
         if (kind < 0.5) {
           for (const im of con) im.setMatrixAt(nc, m);
           col.setHex(greens[(Math.random() * greens.length) | 0]);
@@ -989,13 +1204,15 @@
         const x = p.x + p.rx * sg * (WALL + 2), z = p.z + p.rz * sg * (WALL + 2);
         if (sdAll(x, z).d < 2) continue;
         if (BR && (p.y > 0.05 || Math.hypot(x - BR.x, z - BR.z) < 40)) continue;   // nicht an Rampe oder Brücke
-        const pole = new T.Mesh(new T.CylinderGeometry(0.15, 0.22, 12, 8), pm); pole.position.set(x, 6, z); world.add(pole);
+        if (MAP.mountain && i > 420 && i < N - 220) continue;                         // Bergpass: nur im Tal am Start
+        const py = p.y || 0;
+        const pole = new T.Mesh(new T.CylinderGeometry(0.15, 0.22, 12, 8), pm); pole.position.set(x, 6 + py, z); world.add(pole);
         const arm = new T.Mesh(new T.BoxGeometry(0.2, 0.2, 2.5), pm);
-        arm.position.set(x - p.rx * sg * 1.1, 11.9, z - p.rz * sg * 1.1); arm.lookAt(p.x, 11.9, p.z); world.add(arm);
+        arm.position.set(x - p.rx * sg * 1.1, 11.9 + py, z - p.rz * sg * 1.1); arm.lookAt(p.x, 11.9 + py, p.z); world.add(arm);
         const lamp = new T.Mesh(new T.BoxGeometry(0.6, 0.18, 1.0), lm);
-        lamp.position.set(x - p.rx * sg * 2.2, 11.75, z - p.rz * sg * 2.2); lamp.lookAt(p.x, 11.75, p.z); world.add(lamp);
-        flare(lamp.position.x, 11.6, lamp.position.z, 7, 0xfff3d8, 0.9);
-        pool(p.x + p.rx * sg * 2, p.z + p.rz * sg * 2, 19, 0xfff0d0, 0.24);
+        lamp.position.set(x - p.rx * sg * 2.2, 11.75 + py, z - p.rz * sg * 2.2); lamp.lookAt(p.x, 11.75 + py, p.z); world.add(lamp);
+        flare(lamp.position.x, 11.6 + py, lamp.position.z, 7, 0xfff3d8, 0.9);
+        pool(p.x + p.rx * sg * 2, p.z + p.rz * sg * 2, 19, 0xfff0d0, 0.24, py + 0.06);
       }
     }
     // Reifenstapel an Kurvenaußenseiten
@@ -1003,7 +1220,7 @@
       const tg = new T.CylinderGeometry(0.42, 0.42, 0.28, 12), tm = toon(0x1c1d20);
       const list = [];
       for (let i = 0; i < N; i += 7) {
-        const p = S[i]; if (Math.abs(p.k) < 1 / 50) continue;
+        const p = S[i]; if (Math.abs(p.k) < 1 / 50 || MAP.mountain) continue;
         const sg = p.k > 0 ? 1 : -1;
         const x = p.x + p.rx * sg * (WALL + 0.85), z = p.z + p.rz * sg * (WALL + 0.85);
         if (sdAll(x, z).d < 1) continue;
@@ -1030,16 +1247,17 @@
     function nearest(x, z, hint) { return main.nearest(x, z, hint); }
     // Fahrbahnhöhe am Punkt (Brücke/Rampe), idx = Streckenindex des Autos (damit unten/oben eindeutig bleibt)
     function groundAt(x, z, idx) {
-      if (!BR) return 0;
+      if (!ELEV) return 0;
       if (idx == null || idx < 0) idx = main.nearest(x, z);
-      const p = S[idx]; if (p.y <= 0) return 0;
+      const p = S[idx]; if (BR && p.y <= 0) return 0;
       const lat = (x - p.x) * p.rx + (z - p.z) * p.rz; if (Math.abs(lat) > WALL + 1) return 0;
       const lon = (x - p.x) * p.tx + (z - p.z) * p.tz, q = S[(idx + (lon >= 0 ? 1 : -1) + N) % N];
-      return Math.max(0, p.y + (q.y - p.y) * Math.min(1, Math.abs(lon)));
+      const y = p.y + (q.y - p.y) * Math.min(1, Math.abs(lon));
+      return BR ? Math.max(0, y) : y;
     }
     // Steigung in Fahrtrichtung h (positiv = bergauf)
     function gradeAt(idx, h) {
-      if (!BR || idx == null || idx < 0) return 0;
+      if (!ELEV || idx == null || idx < 0) return 0;
       const p = S[idx]; return (p.gy || 0) * (Math.cos(h) * p.tx - Math.sin(h) * p.tz);
     }
     // Unterkante der Brücke über dem Punkt (für die Kamera unten durch), sonst Infinity
@@ -1117,5 +1335,5 @@
     };
   }
 
-  window.Track = { build, MAPS, ORDER: ['hakone', 'bridge', 'big'], _buildPath: buildPath };
+  window.Track = { build, MAPS, ORDER: ['hakone', 'bridge', 'big', 'mountain'], _buildPath: buildPath };
 })();
