@@ -27,13 +27,13 @@
       for (const c of cols || []) {
         for (const r of c.outputReports || []) {
           const bits = (r.items || []).reduce((a, it) => a + (it.reportSize || 0) * (it.reportCount || 0), 0);
-          if (bits >= 56) return { id: r.reportId || 0, len: Math.ceil(bits / 8) };
+          if (bits >= 56) return { id: r.reportId || 0, len: Math.ceil(bits / 8), found: true };
         }
         const sub = walk(c.children); if (sub) return sub;
       }
       return null;
     };
-    return walk(dev.collections) || { id: 0, len: 7 };
+    return walk(dev.collections) || { id: 0, len: 7, found: false };
   }
   function cmd(bytes) {
     if (!st.dev || !st.dev.opened) return Promise.resolve();
@@ -53,6 +53,10 @@
   }
   async function tryOpen(devs) {
     st.unsupported = '';
+    // Windows teilt das Lenkrad in mehrere HID-Schnittstellen auf – die mit Output-Report zuerst probieren,
+    // sonst landen die Befehle bei einer Schnittstelle, die sie ablehnt („Invalid output report ID“)
+    const hasOut = (d) => { const o = findOut(d); return o.found ? 1 : 0; };
+    devs = [...devs].sort((a, b) => hasOut(b) - hasOut(a));
     for (const d of devs) {
       if (d.vendorId !== VENDOR) continue;
       if (HIDPP[d.productId]) { st.unsupported = HIDPP[d.productId]; continue; }
