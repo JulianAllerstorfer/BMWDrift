@@ -25,7 +25,7 @@
     g.fillStyle = '#fff'; g.fillText(name, 134, 34, 220);
     return new T.CanvasTexture(c);
   }
-  const SLOT_COLORS = ['#ffd21f', '#4fc3ff', '#ff5ab0', '#5dff8a', '#ff8a3d'];
+  const SLOT_COLORS = ['#ffd21f', '#4fc3ff', '#ff5ab0', '#5dff8a', '#ff8a3d', '#b98cff', '#ff4d4d', '#2fe0c8', '#f4f4f4', '#9ad13b', '#ff9ed2', '#3d7bff', '#c9a33a', '#e056fd', '#7fd9ff', '#ff6f61', '#8fe38f', '#d0a5ff', '#ffb347', '#9aa3b5'];   // eine Farbe je Spielerplatz (bis 20)
 
   function carCfg(cfg) {
     cfg = cfg || {};
@@ -43,7 +43,7 @@
     car.root.traverse(o => { if (o.isMesh) o.castShadow = o.material && o.material.type !== 'ShaderMaterial'; });
     car.root.visible = false;
     ctx.scene.add(car.root);
-    const sprite = new T.Sprite(new T.SpriteMaterial({ map: tagTexture(p.name, SLOT_COLORS[p.slot % 5]), depthWrite: false }));
+    const sprite = new T.Sprite(new T.SpriteMaterial({ map: tagTexture(p.name, SLOT_COLORS[p.slot % SLOT_COLORS.length]), depthWrite: false }));
     sprite.scale.set(2.6, 0.65, 1); sprite.position.y = 2.3; sprite.renderOrder = 5;
     car.root.add(sprite);
     Net.remotes.set(p.id, { id: p.id, slot: p.slot, name: p.name, cfg: p.cfg, car, sprite, snaps: [], total: p.total || 0, best: p.best || 0, bestCar: p.bestCar || null, away: true, smokeAcc: [0, 0], cur: null });
@@ -135,7 +135,7 @@
       }
       case 'name': {
         const r = Net.remotes.get(m.id); if (!r) break;
-        r.name = m.name; r.sprite.material.map = tagTexture(m.name, SLOT_COLORS[r.slot % 5]); r.sprite.material.needsUpdate = true; changed(); break;
+        r.name = m.name; r.sprite.material.map = tagTexture(m.name, SLOT_COLORS[r.slot % SLOT_COLORS.length]); r.sprite.material.needsUpdate = true; changed(); break;
       }
       case 'chat': if (Net.onChat) Net.onChat(m); break;
       case 'score': { const r = Net.remotes.get(m.id); if (r) { r.total = m.total; if (m.best != null) r.best = Math.max(r.best || 0, m.best); if (m.bestCar) r.bestCar = m.bestCar; changed(); } break; }
@@ -309,7 +309,7 @@
     for (const r of Net.remotes.values()) arr.push({ id: r.id, name: r.name + ((r.cfg && r.cfg.map && window.Track && Track.MAPS[r.cfg.map] && r.cfg.map !== Net.myMap) ? ' (' + Track.MAPS[r.cfg.map].name + ')' : ''), slot: r.slot, total: r.total, best: r.best || 0, chalRec: (r.cfg && r.cfg.chalRec) || {}, chalCar: (r.cfg && r.cfg.chalRecCar) || {}, lapRec: (r.cfg && r.cfg.lapRec) || {}, lapCar: (r.cfg && r.cfg.lapRecCar) || {}, bestCar: r.bestCar || (r.cfg && r.cfg.bestCar) || null, lvl: (r.cfg && r.cfg.lvl) || 1, map: (r.cfg && r.cfg.map) || 'hakone', me: false });
     return arr;
   };
-  Net.slotColor = (s) => SLOT_COLORS[s % 5];
+  Net.slotColor = (s) => SLOT_COLORS[s % SLOT_COLORS.length];
   Net.isHost = available && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
 
   window.Net = Net;

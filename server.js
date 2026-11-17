@@ -1,7 +1,7 @@
 /* =====================================================================
    E46 DRIFT – LAN-Multiplayer-Server (ohne Zusatzpakete, nur Node.js)
    Start:  node server.js      (oder Doppelklick auf start-multiplayer.command)
-   Liefert das Spiel per HTTP aus und verbindet bis zu 3 Spieler per WebSocket.
+   Liefert das Spiel per HTTP aus und verbindet bis zu 20 Spieler per WebSocket.
    ===================================================================== */
 'use strict';
 const http = require('http');
@@ -11,7 +11,7 @@ const os = require('os');
 const crypto = require('crypto');
 
 const PORT = parseInt(process.env.PORT, 10) || 8046;
-const MAX_PLAYERS = 5;
+const MAX_PLAYERS = 20;
 const ROOT = __dirname;
 const ADMIN_TOKEN = crypto.randomBytes(16).toString('hex');   // nur für das Adminpanel auf diesem Mac
 const pendingMax = new Set();                                  // 'IP|Name' – Max wartet auf Bestätigung vom Spiel

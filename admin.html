@@ -56,7 +56,7 @@
 
 <script>
   const TOKEN = '__ADMIN_TOKEN__';
-  const COLORS = ['#ffd21f', '#4fc3ff', '#ff5ab0', '#5dff8a', '#ff8a3d'];
+  const COLORS = ['#ffd21f', '#4fc3ff', '#ff5ab0', '#5dff8a', '#ff8a3d', '#b98cff', '#ff4d4d', '#2fe0c8', '#f4f4f4', '#9ad13b', '#ff9ed2', '#3d7bff', '#c9a33a', '#e056fd', '#7fd9ff', '#ff6f61', '#8fe38f', '#d0a5ff', '#ffb347', '#9aa3b5'];
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let online = true;
@@ -75,7 +75,7 @@
     $('count').textContent = st.players.length + ' / ' + st.max + ' verbunden';
     $('players').innerHTML = st.players.length ? st.players.map(p => `
       <div class="row">
-        <i class="dot" style="background:${COLORS[p.slot % 5]}"></i>
+        <i class="dot" style="background:${COLORS[p.slot % COLORS.length]}"></i>
         <div class="grow"><div class="name">${esc(p.name)}${p.host ? '<span class="tag">DU / HOST</span>' : ''}${p.maxPending ? '<span class="tag">MAX WARTET – SEITE NEU LADEN</span>' : ''}</div>
           <div class="meta">${esc(p.ip)} · seit ${ago(p.since)} · ${Number(p.total).toLocaleString('de-DE')} Punkte</div></div>
         <button class="max" data-act="max" data-id="${p.id}" data-name="${esc(p.name)}">ALLES MAX</button>

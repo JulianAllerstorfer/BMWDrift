@@ -67,7 +67,7 @@ Oben rechts zeigt eine **Minikarte** die Strecke, die Werkstatt, die Tankstelle 
 `index.html` per Doppelklick im Browser öffnen (Chrome, Safari, Firefox, Edge).
 Ein Server oder eine Internetverbindung ist nicht nötig, weil Three.js lokal in `js/three.min.js` liegt.
 
-## Multiplayer (bis 5 Spieler, z. B. über deinen Handy-Hotspot)
+## Multiplayer (bis 20 Spieler, z. B. über deinen Handy-Hotspot)
 1. Alle Laptops mit demselben Netz verbinden, am besten mit deinem Handy-Hotspot (Schul-WLANs blockieren das oft).
 2. Doppelklick auf `start-multiplayer.command`. Ein Terminal öffnet sich, der Server startet, und das Spiel geht im Browser auf.
 3. Im Terminal (und im Garage-Tab **ONLINE**) steht ein Link wie `http://172.20.10.2:8046`. Den öffnen deine Freunde im Browser.

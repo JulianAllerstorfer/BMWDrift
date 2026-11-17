@@ -541,7 +541,7 @@
     $('mpOff').classList.toggle('hidden', Net.available);
     $('mpOn').classList.toggle('hidden', !Net.available);
     if (!Net.available) return;
-    $('mpStatus').textContent = Net.status + (Net.connected ? ' (' + (Net.remotes.size + 1) + '/' + (Net.max || 5) + ' Spieler)' : '');
+    $('mpStatus').textContent = Net.status + (Net.connected ? ' (' + (Net.remotes.size + 1) + '/' + (Net.max || 20) + ' Spieler)' : '');
     const rows = [{ name: myName + ' (du)', slot: Net.slot, total: score.total, best: rec.best, bestCar: rec.bestModel || null, me: true }].concat(Net.list());
     $('mpPlayers').innerHTML = rows.map(r => '<div class="mpp"><i style="background:' + Net.slotColor(r.slot) + '"></i>' + esc(r.name) + '<small>Lv ' + (r.me ? Prog.level() : (r.lvl || 1)) + ' · Bester Drift ' + fmt(r.best) + (r.bestCar ? ' · ' + esc(carName(r.bestCar)) : '') + '</small></div>').join('');
     $('mpAdmin').classList.toggle('hidden', !Net.isHost);
@@ -555,19 +555,28 @@
         const none = rows.filter(r => !lb.some(e => e.me ? r.me : (!r.me && e.name === r.name && e.slot === r.slot)));
         b.innerHTML = '<div class="hdr">ZEITRENNEN · ' + esc(nm).toUpperCase() + '</div>' +
           lb.map((e, i) => '<div class="row' + (e.me ? ' me' : '') + '"><i style="background:' + Net.slotColor(e.slot) + '"></i><span>' + (i === 0 ? '🏆 ' : '') + esc(e.name) + '</span>' + (e.model ? '<small class="car">' + esc(carName(e.model)) + '</small>' : '') + '<span>' + fmtLap(e.time) + '</span></div>').join('') +
-          none.map(r => '<div class="row' + (r.me ? ' me' : '') + '"><i style="background:' + Net.slotColor(r.slot) + '"></i><span>' + esc(r.me ? myName : r.name) + '</span><span>–</span></div>').join('');
+          none.map(r => '<div class="row' + (r.me ? ' me' : '') + '"><i style="background:' + Net.slotColor(r.slot) + '"></i><span>' + esc(r.me ? myName : r.name) + '</span><span>–</span></div>').join(''); trimBoard(b);
         return;
       }
       if (chal.on) {
         // Challenge: Rundenrekorde auf dieser Strecke
         const mp = cfg.map, nm = (Track.MAPS[mp] || {}).name || mp;
         const cr = rows.map(r => ({ r, v: r.me ? ((rec.chal || {})[mp] || {}).pts || 0 : (r.chalRec || {})[mp] || 0, car: r.me ? ((rec.chal || {})[mp] || {}).model : (r.chalCar || {})[mp] })).sort((a, c) => c.v - a.v);
-        b.innerHTML = '<div class="hdr">CHALLENGE · ' + esc(nm).toUpperCase() + '</div>' + cr.map(({ r, v, car }) => '<div class="row' + (r.me ? ' me' : '') + '"><i style="background:' + Net.slotColor(r.slot) + '"></i><span>' + esc(r.me ? myName : r.name) + '</span>' + (v && car ? '<small class="car">' + esc(carName(car)) + '</small>' : '') + '<span>' + (v ? fmt(v) : '–') + '</span></div>').join('');
+        b.innerHTML = '<div class="hdr">CHALLENGE · ' + esc(nm).toUpperCase() + '</div>' + cr.map(({ r, v, car }) => '<div class="row' + (r.me ? ' me' : '') + '"><i style="background:' + Net.slotColor(r.slot) + '"></i><span>' + esc(r.me ? myName : r.name) + '</span>' + (v && car ? '<small class="car">' + esc(carName(car)) + '</small>' : '') + '<span>' + (v ? fmt(v) : '–') + '</span></div>').join(''); trimBoard(b);
         return;
       }
       rows.sort((a, c) => c.best - a.best);
-      b.innerHTML = '<div class="hdr">BESTER DRIFT</div>' + rows.map(r => '<div class="row' + (r.me ? ' me' : '') + '"><i style="background:' + Net.slotColor(r.slot) + '"></i><span>' + esc(r.me ? myName : r.name) + '</span>' + (r.best && r.bestCar ? '<small class="car">' + esc(carName(r.bestCar)) + '</small>' : '') + '<span>' + fmt(r.best) + '</span></div>').join('');
+      b.innerHTML = '<div class="hdr">BESTER DRIFT</div>' + rows.map(r => '<div class="row' + (r.me ? ' me' : '') + '"><i style="background:' + Net.slotColor(r.slot) + '"></i><span>' + esc(r.me ? myName : r.name) + '</span>' + (r.best && r.bestCar ? '<small class="car">' + esc(carName(r.bestCar)) + '</small>' : '') + '<span>' + fmt(r.best) + '</span></div>').join(''); trimBoard(b);
     } else b.classList.add('hidden');
+  }
+  // Rangliste im Spiel kurz halten (bei bis zu 20 Spielern): die ersten 8, die eigene Zeile bleibt immer sichtbar
+  function trimBoard(b) {
+    const rows = [...b.querySelectorAll('.row')], MAXR = 8;
+    if (rows.length <= MAXR) return;
+    const me = rows.findIndex(r => r.classList.contains('me'));
+    rows.forEach((r, i) => { if (i >= MAXR - (me >= MAXR ? 1 : 0) && i !== me) r.remove(); });
+    const more = document.createElement('div'); more.className = 'row'; more.style.opacity = '0.7';
+    more.innerHTML = '<span>+ ' + (rows.length - MAXR) + ' weitere</span>'; b.appendChild(more);
   }
   const carName = (id) => (window.CAR_MODELS[id] || {}).name || id;
   const esc = (s) => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
@@ -1369,7 +1378,9 @@
   }
   // eigener Startplatz in der Startaufstellung
   function startSpot() {
-    const s0 = track.start, grid = [[0, 0], [0, 4.5], [0, -4.5], [-9, 2.25], [-9, -2.25]][Net.slot % 5] || [0, 0];
+    // Reihen im Wechsel zu 3 und 2 Autos, alle 9 m eine Reihe: reicht für 20 Spieler
+    const s0 = track.start, sl = Net.slot % 20, rw = Math.floor(sl / 5), k = sl % 5;
+    const grid = k < 3 ? [-18 * rw, [0, 4.5, -4.5][k]] : [-18 * rw - 9, k === 3 ? 2.25 : -2.25];
     return { x: s0.x + Math.sin(s0.h) * grid[1] + Math.cos(s0.h) * grid[0], z: s0.z + Math.cos(s0.h) * grid[1] - Math.sin(s0.h) * grid[0], h: s0.h };
   }
   // Spawnplatz in der Werkstatthalle (jeder Spieler hat seinen eigenen)

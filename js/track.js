@@ -1307,13 +1307,18 @@
     const spawns = [];
     {
       const usable = [H.x0 + 4, MAP.lift.x0 - 3];
-      for (let i = 0; i < 5; i++) {
-        const x = usable[0] + (usable[1] - usable[0]) * i / 4;
-        // jeder Platz schaut auf die Toröffnung (sonst fährt man von den äußeren Plätzen gegen die Hallenwand)
-        const z = (H.z0 + H.z1) / 2 + 0.5, tx = Math.max(dcx - doorW + 3, Math.min(dcx + doorW - 3, x)), tz = H.z1 + 1.5;
-        spawns.push({ x, z, h: Math.atan2(-(tz - z), tx - x) });
+      // 20 Plätze in zwei Reihen zu je 10: vordere Reihe am Tor (Plätze 1–10), dahinter die zweite
+      for (const dz of [3.6, -2.4]) {
+        const row = [];
+        for (let i = 0; i < 10; i++) {
+          const x = usable[0] + (usable[1] - usable[0]) * i / 9;
+          // jeder Platz schaut auf die Toröffnung (sonst fährt man von den äußeren Plätzen gegen die Hallenwand)
+          const z = (H.z0 + H.z1) / 2 + dz, tx = Math.max(dcx - doorW + 3, Math.min(dcx + doorW - 3, x)), tz = H.z1 + 1.5;
+          row.push({ x, z, h: Math.atan2(-(tz - z), tx - x) });
+        }
+        row.sort((a, b) => Math.abs(a.x - dcx) - Math.abs(b.x - dcx));   // Platz 1 direkt vor dem Tor
+        spawns.push(...row);
       }
-      spawns.sort((a, b) => Math.abs(a.x - dcx) - Math.abs(b.x - dcx));   // Platz 1 direkt vor dem Tor
     }
     const sp = S[startI - 12];
     return {
