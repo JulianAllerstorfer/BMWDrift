@@ -34,7 +34,23 @@
     return { badge: eng ? eng.badge : null, diesel: eng ? !!eng.diesel : false, rimSize: cfg.rimSize == null ? 1 : cfg.rimSize, letters: !!cfg.letters, lip: (E46.LIP_COLORS[cfg.lipColor | 0] || E46.LIP_COLORS[0]).hex, model: (window.CAR_MODELS[cfg.model] ? cfg.model : 'e46'), plate: E46.lookFromCfg(cfg).plate, paint: P.hex, rimStyle: cfg.rimStyle | 0, rimColor: R.hex, drop: (cfg.drop != null ? cfg.drop : 6) / 100, camber: cfg.camber != null ? cfg.camber : 5, track: (cfg.track != null ? cfg.track : 3) / 100 };
   }
 
+  // Fremde Autos nicht alle im selben Frame aufbauen (beim Beitritt kommen bis zu 19 auf einmal):
+  // Warteschlange, ein Auto pro Frame
+  const pending = new Map();
+  let pumping = false;
+  function pump() {
+    const it = pending.values().next();
+    if (it.done) { pumping = false; return; }
+    pending.delete(it.value.id);
+    buildRemote(it.value);
+    requestAnimationFrame(pump);
+  }
   function addRemote(p) {
+    if (!Net._ctx || Net.remotes.has(p.id)) return;
+    pending.set(p.id, Object.assign({}, p));
+    if (!pumping) { pumping = true; requestAnimationFrame(pump); }
+  }
+  function buildRemote(p) {
     const ctx = Net._ctx;
     if (!ctx || Net.remotes.has(p.id)) return;
     const cc = carCfg(p.cfg);
@@ -50,6 +66,7 @@
     changed();
   }
   function removeRemote(id) {
+    pending.delete(id);
     const r = Net.remotes.get(id); if (!r) return;
     if (r.car.root.parent) r.car.root.parent.remove(r.car.root);
     for (const k of ['l', 'r']) Net._ctx.skids.lift(id + k);
@@ -113,6 +130,7 @@
       }
       case 'away': { const r = Net.remotes.get(m.id); if (r) { r.away = true; r.snaps.length = 0; } break; }
       case 'cfg': {
+        if (pending.has(m.id)) { pending.get(m.id).cfg = m.cfg; break; }
         const r = Net.remotes.get(m.id); if (!r) break;
         const c = carCfg(m.cfg), old = carCfg(r.cfg);
         r.cfg = m.cfg;
@@ -134,17 +152,20 @@
         break;
       }
       case 'name': {
+        if (pending.has(m.id)) { pending.get(m.id).name = m.name; break; }
         const r = Net.remotes.get(m.id); if (!r) break;
         r.name = m.name; r.sprite.material.map = tagTexture(m.name, SLOT_COLORS[r.slot % SLOT_COLORS.length]); r.sprite.material.needsUpdate = true; changed(); break;
       }
       case 'chat': if (Net.onChat) Net.onChat(m); break;
-      case 'score': { const r = Net.remotes.get(m.id); if (r) { r.total = m.total; if (m.best != null) r.best = Math.max(r.best || 0, m.best); if (m.bestCar) r.bestCar = m.bestCar; changed(); } break; }
+      case 'score': { const q = pending.get(m.id); if (q) { q.total = m.total; if (m.best != null) q.best = Math.max(q.best || 0, m.best); if (m.bestCar) q.bestCar = m.bestCar; }
+        const r = Net.remotes.get(m.id); if (r) { r.total = m.total; if (m.best != null) r.best = Math.max(r.best || 0, m.best); if (m.bestCar) r.bestCar = m.bestCar; changed(); } break; }
     }
   }
   Net._handle = handle;
 
   function onClose() {
     Net.connected = false; Net._ws = null;
+    pending.clear();
     for (const id of [...Net.remotes.keys()]) removeRemote(id);
     if (Net._full) { changed(); return; }
     Net.status = 'Getrennt – neuer Versuch …'; changed();

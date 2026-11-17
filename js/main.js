@@ -57,6 +57,12 @@
     headSpot = new T.SpotLight(0xfff0d2, 0, 75, 0.5, 0.75, 1.2);
     driveScene.add(headSpot, headSpot.target);
     buildCar();
+    // Alle Modelle einmal vorab aufbauen (noch hinter dem Ladebildschirm): die Karosserie-Berechnung wird dabei
+    // gemerkt, damit fremde Autos (Beitritt, Autowechsel) und der eigene Wechsel in der Garage später nicht ruckeln
+    for (const id of Object.keys(window.CAR_MODELS)) {
+      if (id === cfg.model) continue;
+      try { E46.create({ model: id }).dispose(); } catch (e) { /* nur Vorwärmen */ }
+    }
     phys = new Physics.Car();
     Physics.applyTuning(cfg);
     Net.init({ scene: driveScene, smoke, skids, me: () => phys, soundOn: () => !!cfg.sound, volume: () => Math.min(1, cfg.volume / 100) });

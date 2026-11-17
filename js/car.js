@@ -181,10 +181,26 @@
     return ins;
   }
   // Punkt auf Front-/Heckfläche: liegt (y,z) außerhalb der Karosserie, wird z nach innen gezogen
+  // Ergebnisse je Modell merken: dieselben Punkte kommen bei jedem Aufbau wieder (fremde Autos, Autowechsel)
+  const faceMemo = new Map();
   function faceX(y, z, lo, hi) {
+    const mid = S.id + (lo < 0 ? 'R' : 'F');
+    let memo = faceMemo.get(mid);
+    if (!memo || memo.size > 20000) { memo = new Map(); faceMemo.set(mid, memo); }
+    let row = memo.get(y); if (!row) { row = new Map(); memo.set(y, row); }
+    const hit = row.get(z); if (hit !== undefined) return hit;
     let zz = Math.max(1e-4, Math.abs(z));   // nie genau auf der Mittellinie messen: dort kippt der Innen/Außen-Test durch Rundungsfehler
-    for (let k = 0; k < 60 && zz > 1e-4 && !insideSec(section(lo), y, zz); k++) zz = Math.max(1e-4, zz - 0.004);
-    for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; if (insideSec(section(m), y, zz)) lo = m; else hi = m; }
+    // Schnittpunkte der Höhe y mit dem Querschnitt bei lo einmal ausrechnen (gleiche Rechnung wie insideSec),
+    // statt den ganzen Querschnitt bei jedem Schritt neu zu prüfen
+    const p = section(lo).pts, n = p.length, cr = [];
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+      const zi = p[i][0], yi = p[i][1], zj = p[j][0], yj = p[j][1];
+      if ((yi > y) !== (yj > y)) cr.push((zj - zi) * (y - yi) / (yj - yi) + zi);
+    }
+    const inLo = (v) => { let c = 0; for (let i = 0; i < cr.length; i++) if (v < cr[i]) c++; return (c & 1) === 1; };
+    for (let k = 0; k < 60 && zz > 1e-4 && !inLo(zz); k++) zz = Math.max(1e-4, zz - 0.004);
+    for (let i = 0; i < 16; i++) { const m = (lo + hi) / 2; if (insideSec(section(m), y, zz)) lo = m; else hi = m; }   // 16 Schritte: auf ~5 µm genau
+    row.set(z, lo);
     return lo;
   }
   // Suchbereich: ab einem Schnitt, der sicher innerhalb der Karosserie liegt (Modelle können ihn setzen: faceF / faceR)
