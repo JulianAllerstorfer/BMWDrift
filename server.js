@@ -13,7 +13,12 @@ const crypto = require('crypto');
 const PORT = parseInt(process.env.PORT, 10) || 8046;
 const MAX_PLAYERS = 20;
 const ROOT = __dirname;
-const ADMIN_TOKEN = crypto.randomBytes(16).toString('hex');   // nur für das Adminpanel auf diesem Mac
+const ADMIN_TOKEN = crypto.randomBytes(16).toString('hex');   // Schutz gegen fremde Seiten (CSRF) für die Admin-API
+// Passwort fürs Adminpanel über den öffentlichen Link. Ohne Passwort bleibt das Panel nur lokal erreichbar.
+const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || '');
+// Cookie-Wert hängt nur vom Passwort ab: bleibt über Neustarts gültig, wird ungültig, sobald du das Passwort änderst
+const ADMIN_COOKIE = ADMIN_PASSWORD ? crypto.createHmac('sha256', ADMIN_PASSWORD).update('bmwdrift-admin-v1').digest('hex') : '';
+const loginFails = new Map();                                  // IP -> { n, until } – bremst Passwort-Raten
 const pendingMax = new Set();                                  // 'IP|Name' – Max wartet auf Bestätigung vom Spiel
 const maxKey = (c) => c.ip + '|' + c.name;
 const banned = new Map();                                      // IP -> Name (gilt bis Server-Neustart)
@@ -67,7 +72,7 @@ const server = http.createServer((req, res) => {
   if (p === '/index.html') console.log(`  Seite aufgerufen von ${req.socket.remoteAddress}`);
 });
 
-// ---------- Adminpanel (nur vom Host-Mac aus erreichbar) ----------
+// ---------- Adminpanel (lokal frei, über den öffentlichen Link nur mit Passwort) ----------
 function adminState() {
   return {
     players: [...players.values()].map(p => ({ id: p.id, name: p.name, ip: p.ip, slot: p.slot, total: p.total || 0, host: p.local, since: p.since, maxPending: pendingMax.has(maxKey(p)) })),
@@ -76,12 +81,63 @@ function adminState() {
   };
 }
 function json(res, code, obj) { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); }
+const safeEq = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
+function cookieOf(req, name) {
+  for (const part of String(req.headers.cookie || '').split(';')) {
+    const i = part.indexOf('='); if (i > 0 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
+  }
+  return '';
+}
+const hasAdminCookie = (req) => !!ADMIN_COOKIE && safeEq(cookieOf(req, 'bmwadmin'), ADMIN_COOKIE);
+const adminAllowed = (req) => isLocal(req) || hasAdminCookie(req);
+function loginPage(res, code, msg) {
+  res.writeHead(code, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+  res.end(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>BMW Drift Admin</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0f1116;color:#fff;font:14px "Helvetica Neue",Arial,sans-serif;padding:16px;box-sizing:border-box}
+form{background:#181b22;border:2px solid #111318;border-radius:14px;padding:22px;width:100%;max-width:340px;box-shadow:5px 5px 0 rgba(0,0,0,.4)}
+h1{font:900 28px "Arial Black",Arial,sans-serif;margin:0 0 14px;transform:skewX(-10deg)}h1 span{color:#ffd21f}
+input,button{width:100%;box-sizing:border-box;border:2px solid #111318;border-radius:8px;padding:11px;font-size:15px;margin-top:8px}
+button{background:#ffd21f;color:#111318;font:900 14px "Arial Black",Arial,sans-serif;cursor:pointer}.err{color:#ff3b3b;font-weight:700;margin-top:10px}</style></head>
+<body><form method="post" action="/admin/login"><h1>BMW <span>ADMIN</span></h1>
+${ADMIN_PASSWORD ? '<input type="password" name="pw" placeholder="Passwort" autofocus autocomplete="current-password" required><button>EINLOGGEN</button>' : '<div class="err">Kein Admin-Passwort gesetzt. Das Panel ist nur direkt auf dem Server erreichbar.</div>'}
+${msg ? `<div class="err">${msg}</div>` : ''}</form></body></html>`);
+}
+function handleLogin(req, res) {
+  const ip = clientIp(req), now = Date.now();
+  const f = loginFails.get(ip);
+  if (f && f.until > now) { loginPage(res, 429, `Zu viele Versuche. Warte ${Math.ceil((f.until - now) / 60000)} min.`); return; }
+  let body = '';
+  req.on('data', (d) => { body += d; if (body.length > 2000) req.destroy(); });
+  req.on('end', () => {
+    const pw = new URLSearchParams(body).get('pw') || '';
+    if (ADMIN_PASSWORD && safeEq(pw, ADMIN_PASSWORD)) {
+      loginFails.delete(ip);
+      const https = String(req.headers['x-forwarded-proto'] || '').includes('https');
+      res.writeHead(303, { Location: '/admin', 'Cache-Control': 'no-store',
+        'Set-Cookie': `bmwadmin=${ADMIN_COOKIE}; Path=/admin; HttpOnly; SameSite=Strict; Max-Age=2592000${https ? '; Secure' : ''}` });
+      res.end();
+      console.log(`! Admin-Login von ${ip}`);
+      return;
+    }
+    const n = (f && f.until <= now && f.n >= 5 ? 0 : (f ? f.n : 0)) + 1;
+    loginFails.set(ip, { n, until: n >= 5 ? now + 15 * 60000 : 0 });
+    console.log(`! Falsches Admin-Passwort von ${ip}`);
+    setTimeout(() => loginPage(res, 401, 'Falsches Passwort.'), 800);
+  });
+}
 function handleAdmin(req, res, p) {
-  if (!isLocal(req)) { res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('Das Adminpanel ist nur auf dem Host-Mac erreichbar.'); return; }
-  if (p === '/admin') {
+  if (p === '/admin/login' && req.method === 'POST') { handleLogin(req, res); return; }
+  if (p === '/admin/logout') {
+    res.writeHead(303, { Location: '/admin', 'Set-Cookie': 'bmwadmin=; Path=/admin; HttpOnly; SameSite=Strict; Max-Age=0' }); res.end(); return;
+  }
+  if (!adminAllowed(req)) {
+    if (p === '/admin' || p === '/admin/login') { loginPage(res, ADMIN_PASSWORD ? 200 : 403, ''); return; }
+    json(res, 401, { error: 'kein Zugriff' }); return;
+  }
+  if (p === '/admin' || p === '/admin/login') {
     fs.readFile(path.join(ROOT, 'admin.html'), 'utf8', (err, html) => {
       if (err) { res.writeHead(500); res.end('admin.html fehlt'); return; }
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY' });
       res.end(html.replace('__ADMIN_TOKEN__', ADMIN_TOKEN));
     });
     return;
@@ -248,7 +304,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('  ==============================================');
   console.log(`   Du selbst:        http://localhost:${PORT}`);
   for (const u of urls) console.log(u === process.env.PUBLIC_URL ? `   Freunde ONLINE:   ${u}` : `   Freunde im WLAN:  ${u}`);
-  console.log(`   Adminpanel:       http://localhost:${PORT}/admin   (nur auf diesem Mac)`);
+  console.log(`   Adminpanel:       http://localhost:${PORT}/admin   ${ADMIN_PASSWORD ? '(auch über den öffentlichen Link + /admin, mit Passwort)' : '(nur auf diesem Rechner – ADMIN_PASSWORD setzen für Zugriff von außen)'}`);
   console.log(`   Max. ${MAX_PLAYERS} Spieler · Beenden mit Ctrl+C\n`);
   if (process.platform === 'darwin' && !process.env.NO_OPEN) require('child_process').exec(`open http://localhost:${PORT}`);
 });

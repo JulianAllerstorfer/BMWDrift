@@ -37,7 +37,7 @@
 <body>
 <div class="wrap">
   <h1>E46 <span>ADMIN</span></h1>
-  <div class="sub">Nur auf deinem Mac erreichbar. <b>Kicken</b> wirft einen Spieler raus (er kann wieder beitreten). <b>Sperren</b> blockiert sein Gerät, bis du den Server neu startest.</div>
+  <div class="sub">Nur für dich (lokal oder mit Passwort). <a href="/admin/logout" style="color:#9aa3b5">Abmelden</a><br> <b>Kicken</b> wirft einen Spieler raus (er kann wieder beitreten). <b>Sperren</b> blockiert sein Gerät, bis du den Server neu startest.</div>
 
   <div class="card">
     <div class="ctitle">SPIELER <small id="count" style="margin-left:10px"></small> <button class="max" data-act="maxall" style="margin-left:auto">ALLE AUF MAX</button></div>
@@ -90,7 +90,7 @@
 
   async function refresh() {
     try { render(await api('state')); if (!online) { online = true; toast('Wieder verbunden'); } }
-    catch (e) { if (online) { online = false; $('players').innerHTML = '<div class="empty off">Server nicht erreichbar – läuft start-multiplayer.command noch?</div>'; } }
+    catch (e) { if (online) { online = false; $('players').innerHTML = '<div class="empty off">Server nicht erreichbar oder abgemeldet – Seite neu laden.</div>'; } }
   }
 
   document.addEventListener('click', async (e) => {

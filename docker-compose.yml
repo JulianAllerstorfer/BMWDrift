@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     environment:
       PUBLIC_URL: https://${NGROK_DOMAIN:-pacifist-romp-concrete.ngrok-free.dev}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}   # steht nur in ~/bmwdrift/.env auf dem Server
     ports:
       - "8046:8046"   # im LAN / Tailscale direkt erreichbar
 
