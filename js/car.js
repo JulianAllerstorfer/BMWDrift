@@ -765,6 +765,38 @@
     g.fillText('Ford', cx, cy + ry * 0.06, rx * 1.25);
     const t = new T.CanvasTexture(c); t.anisotropy = 4; return t;
   }
+  // VW-Emblem: Chromring, V oben und W unten ineinander, auf dunklem Grund (blau für die Nabendeckel)
+  function vwTexture(bg) {
+    const N = 512, c = document.createElement('canvas'); c.width = c.height = N;
+    const g = c.getContext('2d'), cx = N / 2, cy = N / 2, R = N / 2 - 4;
+    const chrome = g.createLinearGradient(0, 0, 0, N); chrome.addColorStop(0, '#fbfcfd'); chrome.addColorStop(0.45, '#c3c9d0'); chrome.addColorStop(0.55, '#8d949c'); chrome.addColorStop(1, '#e4e8ec');
+    g.fillStyle = chrome; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();
+    const r = R * 0.86; g.fillStyle = bg; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
+    g.save(); g.beginPath(); g.arc(cx, cy, r, 0, 7); g.clip();
+    const P = (pts) => { g.beginPath(); pts.forEach(([x, y], i) => g[i ? 'lineTo' : 'moveTo'](cx + x * r, cy + y * r)); };
+    const V = [[-0.56, -1.05], [0, 0.18], [0.56, -1.05]], W = [[-1.05, -0.42], [-0.47, 0.98], [0, -0.06], [0.47, 0.98], [1.05, -0.42]];
+    g.lineJoin = 'miter'; g.miterLimit = 10; g.lineCap = 'butt';
+    for (const [pts, w] of [[W, 0.2], [V, 0.2]]) {
+      g.strokeStyle = bg; g.lineWidth = (w + 0.12) * r; P(pts); g.stroke();      // Fuge zum anderen Buchstaben
+      g.strokeStyle = chrome; g.lineWidth = w * r; P(pts); g.stroke();
+    }
+    g.restore();
+    const t = new T.CanvasTexture(c); t.anisotropy = 4; return t;
+  }
+  // Wabenmuster (nahtlos kachelbar): Stege deckend, Zellen durchsichtig
+  function hexTexture() {
+    const r = 18, w = Math.sqrt(3) * r, W = Math.round(w * 2), H = Math.round(r * 3 * 2);
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d'), sx = W / (w * 2), sy = H / (r * 6);
+    g.scale(sx, sy); g.strokeStyle = '#ffffff'; g.lineWidth = 4.2; g.lineJoin = 'round';
+    for (let row = -1; row <= 4; row++) for (let col = -1; col <= 3; col++) {
+      const cx = col * w + (row % 2 ? w / 2 : 0), cy = row * r * 1.5;
+      g.beginPath();
+      for (let k = 0; k < 6; k++) { const a = Math.PI / 6 + k * Math.PI / 3; g[k ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * r, cy + Math.sin(a) * r); }
+      g.closePath(); g.stroke();
+    }
+    const t = new T.CanvasTexture(c); t.anisotropy = 4; return t;
+  }
   let GLARE_TEX = null;
   function glareTexture() {
     const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
@@ -861,7 +893,7 @@
   ];
   const RIM_SIZES = [{ name: '16"', r: 0.203 }, { name: '17"', r: 0.216 }, { name: '18"', r: 0.229 }, { name: '19"', r: 0.242 }];
   const LIP_COLORS = [{ name: 'Poliert', hex: 0xd9dde2 }, { name: 'Wie Felge', hex: null }, { name: 'Schwarz', hex: 0x1b1c1f }, { name: 'Gold', hex: 0xc9a33a }, { name: 'Bronze', hex: 0x8a6232 }];
-  let ROUNDEL_TEX = null, LETTER_TEX = null, OVAL_TEX = null, OVAL_CAP_TEX = null;
+  let ROUNDEL_TEX = null, LETTER_TEX = null, OVAL_TEX = null, OVAL_CAP_TEX = null, VW_TEX = null, VW_CAP_TEX = null;
   // weiße Reifenschrift im Kreis (wird auf die Reifenflanke gelegt)
   function letterTexture(rIn, rOut) {
     const c = document.createElement('canvas'); c.width = c.height = 1024;
@@ -996,7 +1028,8 @@
     }
     if (!ROUNDEL_TEX) ROUNDEL_TEX = roundelTexture();
     if (opt.brand === 'ford' && !OVAL_CAP_TEX) OVAL_CAP_TEX = ovalTexture(true);
-    const capMat = new T.MeshBasicMaterial({ map: opt.brand === 'ford' ? OVAL_CAP_TEX : ROUNDEL_TEX });
+    if (opt.brand === 'vw' && !VW_CAP_TEX) VW_CAP_TEX = vwTexture('#1f3f7a');
+    const capMat = new T.MeshBasicMaterial({ map: opt.brand === 'ford' ? OVAL_CAP_TEX : opt.brand === 'vw' ? VW_CAP_TEX : ROUNDEL_TEX });
     const cap = new T.Mesh(new T.CircleGeometry(0.028, 24), capMat);
     cap.position.z = 0.012; spokes.add(cap);
     // Spiegeln für linke Seite erfolgt über das Gelenk
@@ -1149,8 +1182,16 @@
       const cy = (y0 + y1) / 2, fr = G.frame || 0.014;
       const inner = full.map(p => [p[0] * (zw - fr) / zw, cy + (p[1] - cy) * ((y1 - y0) / 2 - fr) / ((y1 - y0) / 2)]);
       const sh = shapeOf(full); sh.holes.push(shapeOf(inner.slice().reverse()));
-      F.add(solidDecal(sh, 0.022, 'F', -0.006, mats.chrome, { maxLen: 0.025 }));
+      F.add(solidDecal(sh, 0.022, 'F', -0.006, G.frameMat ? matOf(G.frameMat) : mats.chrome, { maxLen: 0.025 }));
       F.add(flatDecal(inner, 'F', 0.004, mats.dark, { maxLen: 0.025 }));
+      // Wabengitter (z. B. Focus ST-Line): Muster als Textur, Zellen ca. G.cell Meter groß
+      if (G.mesh === 'hex') {
+        let z0 = 1e9, z1 = -1e9; for (const p of inner) { z0 = Math.min(z0, p[0]); z1 = Math.max(z1, p[0]); }
+        const tx = hexTexture(), cell = G.cell || 0.034;
+        tx.wrapS = tx.wrapT = T.RepeatWrapping; tx.repeat.set((z1 - z0) / cell, (y1 - y0) / (cell * 1.732));
+        const hm = real(0x2c2f35, 0.25, 0.2, { map: tx, transparent: true, alphaTest: 0.3 });
+        F.add(flatDecal(inner, 'F', 0.008, hm, { maxLen: 0.025, uv: true }));
+      }
       const zAt = (y) => {   // Breite des Gitters auf Höhe y
         const q = []; for (let i = 0; i < inner.length; i++) { const a = inner[i], b = inner[(i + 1) % inner.length]; if ((a[1] <= y && b[1] > y) || (b[1] <= y && a[1] > y)) q.push(a[0] + (y - a[1]) / (b[1] - a[1]) * (b[0] - a[0])); }
         return q.length >= 2 ? [Math.min(...q), Math.max(...q)] : null;
@@ -1169,6 +1210,16 @@
       m.position.copy(pose.p); orientUp(m, pose.n); return m;
     };
     if (SP.oval && SP.oval.f) F.add(ovalAt('F', SP.oval.f));
+    // VW-Emblem vorn / hinten: [Höhe, Radius, Abstand zur Fläche]
+    const vwAt = (where, o) => {
+      if (!VW_TEX) VW_TEX = vwTexture('#16191e');
+      const pose = facePose(where, o[0], 0, o[2] || 0.01, 0.02);
+      const g = new T.Group(); g.position.copy(pose.p); orientUp(g, pose.n);
+      const disc = new T.Mesh(new T.CircleGeometry(o[1], 40), new T.MeshBasicMaterial({ map: VW_TEX })); disc.position.z = 0.006; g.add(disc);
+      const rim = new T.Mesh(new T.CylinderGeometry(o[1], o[1], 0.012, 40, 1, true), mats.chrome); rim.rotation.x = Math.PI / 2; g.add(rim);
+      return g;
+    };
+    if (SP.vwLogo && SP.vwLogo.f) F.add(vwAt('F', SP.vwLogo.f));
     // Scheinwerfer
     const H = SP.head, headObjs = [];
     for (const sd of [1, -1]) {
@@ -1360,11 +1411,11 @@
       const g = new T.ExtrudeGeometry(sp, { depth: hw * 2, bevelEnabled: true, bevelSize: 0.008, bevelThickness: 0.01, bevelSegments: 2 });
       g.translate(0, 0, -hw);
       const m = new T.Mesh(g, paint);
-      m.position.set(sx, s.yr + 0.035, 0);
+      m.position.set(sx, s.yr + 0.035 - (SP.spoilerDrop || 0), 0);   // spoilerDrop: Spoiler liegt direkt auf dem Dach auf
       roofSpoiler.add(m, outline(m, 0.006));
       bodyG.add(roofSpoiler);
       const third = new T.Mesh(new T.BoxGeometry(0.01, 0.014, 0.36), mats.tail);
-      third.position.set(sx - len + 0.015, s.yr - 0.012, 0); bodyG.add(third);
+      third.position.set(sx - len + 0.015, s.yr - 0.012 - (SP.spoilerDrop || 0), 0); bodyG.add(third);
     }
     // GT-Flügel (Tuning)
     const gtWing = new T.Group(); gtWing.visible = false; bodyG.add(gtWing);
@@ -1568,6 +1619,7 @@
         rd.position.copy(pose.p); orientUp(rd, pose.n); R.add(rd);
       }
       if (SP.oval && SP.oval.r) R.add(ovalAt('R', SP.oval.r));
+      if (SP.vwLogo && SP.vwLogo.r) R.add(vwAt('R', SP.vwLogo.r));
       for (const bd of SP.badges) {
         const txt = (cfg.badge && bd === SP.badges[0]) ? cfg.badge : bd.t;   // Typenschild passend zum Motor (z. B. 330d)
         const bt = new T.MeshBasicMaterial({ map: badgeTexture(txt, 256, 64, bd.font), transparent: true });
@@ -1730,7 +1782,7 @@
         chassis.rotation.z = st.pitch || 0;
       },
       dispose() {
-        root.traverse(o => { if (o.isMesh) { o.geometry.dispose(); const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const m of ms) { if (m !== OUTLINE) { if (m.map && m.map !== ROUNDEL_TEX && m.map !== OVAL_TEX && m.map !== OVAL_CAP_TEX) m.map.dispose(); m.dispose(); } } } });
+        root.traverse(o => { if (o.isMesh) { o.geometry.dispose(); const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const m of ms) { if (m !== OUTLINE) { if (m.map && m.map !== ROUNDEL_TEX && m.map !== OVAL_TEX && m.map !== OVAL_CAP_TEX && m.map !== VW_TEX && m.map !== VW_CAP_TEX) m.map.dispose(); m.dispose(); } } } });
       },
       dims: { XF, XR, AXF, AXR, WHEEL_R, halfW: Math.max(...SP.halfW.map(p => p[1])), trackHalf: TH }
     };

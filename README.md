@@ -25,6 +25,14 @@ Jeder Motor klingt anders. Diesel machen Rußwolken und haben ein eigenes Typens
 Hohe, stumpfe Front mit großen Klarglas-Scheinwerfern, Chromgrill mit Ford-Oval, Nebelscheinwerfer, schwarze Türschutzleisten, Dachreling, Fenster-Dreieck vorn, fast senkrechte Heckklappe und hochkant stehende Rückleuchten.
 Motoren mit Serienleistung und 5-Gang-Getriebe: 1.6 16V Duratec (ca. 100 PS) oder 1.4 TDCi (68 PS, nagelt). Wer mehr will, dreht im Tab MOTOR die Leistung hoch.
 
+**Ford Focus (Mk4 Facelift, 2025, ST-Line):** Fünftürer mit echten Maßen: 4,38 m lang, 1,83 m breit, 1,47 m hoch, Radstand 2,70 m.
+Großer schwarzer Wabengrill mit dem Ford-Oval in der Mitte (Kennzeichen unten im Grill), schmale spitze LED-Scheinwerfer mit Tagfahrlicht-Haken, hohe seitliche Lufteinlässe, schwarze Spiegelkappen, kleines Dreiecksfenster in der C-Säule, Dachspoiler über der schrägen Heckscheibe und waagrechte LED-Rückleuchten mit „FOCUS“-Schriftzug.
+Motoren: 1.0 EcoBoost Hybrid (Dreizylinder, ca. 155 PS, klingt unrund-knurrig) oder Focus ST mit 2.3 EcoBoost (ca. 280 PS).
+
+**VW Polo (6R, 2013):** Fünftürer vor dem Facelift: 3,97 m lang, 1,68 m breit, 1,46 m hoch, Radstand 2,47 m.
+Flacher schwarzer Grill mit Chromstäben, der mit den Klarglas-Scheinwerfern (zwei runde Reflektoren) ein durchgehendes Band bildet, großes VW-Zeichen vorn und hinten, trapezförmiger unterer Einlass mit Nebelscheinwerfern, scharfe Tornadolinie auf Griffhöhe, breite C-Säule und Rückleuchten in den Ecken. VW-Nabendeckel auf den Felgen.
+Motoren: 1.2 TSI (105 PS), GTI 1.4 TSI mit Kompressor und Turbo (ca. 180 PS) oder 1.6 TDI (90 PS, nagelt).
+
 **Neiwirth (Traktor):** Ackerschlepper mit Vierzylinder-Turbodiesel (ca. 390 PS), 3,3 Tonnen, riesigen Stollenreifen und bis ca. 130 km/h.
 Er hat eine Kabine mit Fahrer und eine Rundumleuchte. Der Ruß steigt aus dem Schornstein, der Sound tuckert tief.
 Lack- und Felgenfarbe lassen sich ändern. Die Kamera sitzt bei ihm höher, und die Motorhauben-Kamera ist die Sicht aus der Kabine.

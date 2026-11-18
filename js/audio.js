@@ -153,6 +153,26 @@ registerProcessor('engine-proc', EngineProc);`;
     fusiond: { cyl: 4, pipe: 0.0135, refl: 0.56, header: 0.0034, hrefl: 0.3, noise: 0.36, intake: 0.1, damp: 0.6, rasp: 0.2, gain: 0.32, tick: 0.7, muffle: 600,
       camp: [1.0, 0.85, 0.95, 0.82], coff: [0, 0.01, -0.007, 0.013], crackle: 0,
       whistle: { base: 1100, k: 2300, vol: 0.04, type: 'sine' }, bov: null, vol: 0.95 },
+    // Ford Focus 1.0 EcoBoost – Dreizylinder-Turbo: unrund-knurrig (ungerade Zündfolge), leichtes Turbo-Pfeifen, leises Abblasen
+    focus: { cyl: 3, pipe: 0.0112, refl: 0.6, header: 0.0028, hrefl: 0.34, noise: 0.15, intake: 0.3, damp: 0.6, rasp: 0.3, gain: 0.3, tick: 0.08, muffle: 800,
+      camp: [1.0, 0.84, 0.93], coff: [0, 0.014, -0.01], crackle: 0.03,
+      whistle: { base: 1500, k: 3200, vol: 0.035, type: 'sine' }, bov: { vol: 0.3, f1: 2000, f2: 4200 }, vol: 0.9 },
+    // Focus ST 2.3 EcoBoost – Vierzylinder-Turbo mit Klappenauspuff: kernig, knallt im Schub, Turbo deutlich hörbar
+    focusst: { cyl: 4, pipe: 0.0128, refl: 0.66, header: 0.003, hrefl: 0.32, noise: 0.2, intake: 0.35, damp: 0.46, rasp: 0.32, gain: 0.33, tick: 0, muffle: 1150,
+      camp: [1.0, 0.82, 0.96, 0.8], coff: [0, 0.008, -0.005, 0.01], crackle: 0.22,
+      whistle: { base: 1600, k: 3500, vol: 0.05, type: 'sine' }, bov: { vol: 0.6, f1: 1600, f2: 3800 }, vol: 1.15 },
+    // VW Polo 1.2 TSI – kleiner Turbo-Vierzylinder, Serienauspuff: sauber, etwas surrend, kaum Pfeifen
+    polo: { cyl: 4, pipe: 0.0105, refl: 0.58, header: 0.0025, hrefl: 0.36, noise: 0.12, intake: 0.35, damp: 0.64, rasp: 0.2, gain: 0.28, tick: 0.04, muffle: 780,
+      camp: [1.0, 0.93, 0.98, 0.91], coff: [0, 0.004, -0.003, 0.005], crackle: 0.01,
+      whistle: { base: 1900, k: 3600, vol: 0.022, type: 'sine' }, bov: null, vol: 0.8 },
+    // Polo GTI 1.4 TSI – Kompressor + Turbo: heller, giftiger Vierzylinder, Kompressor-Surren, Abblasventil
+    pologti: { cyl: 4, pipe: 0.0112, refl: 0.66, header: 0.0027, hrefl: 0.33, noise: 0.18, intake: 0.5, damp: 0.5, rasp: 0.3, gain: 0.32, tick: 0, muffle: 1100,
+      camp: [1.0, 0.84, 0.97, 0.82], coff: [0, 0.007, -0.005, 0.009], crackle: 0.14,
+      whistle: { base: 2200, k: 4200, vol: 0.05, type: 'sine' }, bov: { vol: 0.55, f1: 1800, f2: 4200 }, vol: 1.05 },
+    // Polo 1.6 TDI – Common-Rail-Diesel: nagelt, brummig, leises Turbo-Pfeifen
+    polod: { cyl: 4, pipe: 0.0138, refl: 0.56, header: 0.0034, hrefl: 0.3, noise: 0.34, intake: 0.1, damp: 0.62, rasp: 0.18, gain: 0.31, tick: 0.62, muffle: 590,
+      camp: [1.0, 0.86, 0.95, 0.83], coff: [0, 0.009, -0.006, 0.012], crackle: 0,
+      whistle: { base: 1100, k: 2400, vol: 0.045, type: 'sine' }, bov: null, vol: 0.95 },
     // Moped 50 ccm – Einzylinder-Viertakter: zündet nur jede zweite Umdrehung -> tiefes „Pöp-pöp“ im Leerlauf,
     // gleichmäßig (keine Aussetzer), gedämpfter Serienauspuff, etwas Ventiltickern
     moped4: { cyl: 1, two: false, pipe: 0.0065, refl: 0.6, header: 0.0012, hrefl: 0.45, noise: 0.22, intake: 0.4, damp: 0.5, rasp: 0.35, gain: 0.2,

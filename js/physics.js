@@ -23,6 +23,10 @@
     duratec: [[700, 0.5], [1500, 0.68], [2500, 0.82], [3500, 0.95], [4000, 1], [4800, 0.97], [5500, 0.9], [6000, 0.81], [6500, 0.68], [7000, 0.45]],
     // 50-ccm-Viertakter (getunt): gleichmäßiger, breiteres Band, dreht niedriger
     fourstroke: [[1200, 0.55], [3000, 0.75], [5000, 0.92], [6500, 1], [7800, 0.95], [8800, 0.8], [9500, 0.6], [10000, 0.35]],
+    // Ford 1,0-l-EcoBoost (Dreizylinder-Turbo, Mildhybrid): früh volles Drehmoment, flaches Plateau, oben raus etwas zäh
+    ecoboost3: [[700, 0.45], [1400, 0.8], [1900, 1], [4000, 1], [5000, 0.94], [6000, 0.86], [6500, 0.74], [7000, 0.5]],
+    // VW 1,2-l-TSI (Vierzylinder-Turbo): Plateau 1550–4100/min, fällt danach recht schnell ab
+    tsi: [[700, 0.5], [1300, 0.8], [1550, 1], [4100, 1], [5000, 0.84], [5500, 0.76], [6000, 0.64], [6500, 0.45]],
     twostroke: [[1500, 0.28], [3000, 0.4], [5000, 0.58], [6500, 0.78], [7800, 0.95], [8600, 1], [9600, 0.94], [10400, 0.74], [11000, 0.45]]
   };
   // Grunddaten je Fahrzeug
@@ -49,6 +53,12 @@
     // Ford Fusion ("Dreckshittn"): hoch, kurz, 1150 kg, Serienleistung (1.6: 100 PS / 146 Nm), 5-Gang-Getriebe iB5
     fusion: { mass: 1150, a: 1.05, b: 1.436, wheelR: 0.305, trackW: 1.45, curve: 'duratec', maxTorque: 146, idle: 800, redline: 6500,
       gears: [0, 3.58, 1.93, 1.28, 0.95, 0.76], final: 4.06, drag: 0.40, rollRes: 11, cgH: 0.58 },
+    // Ford Focus Mk4 (2025) 1.0 EcoBoost Hybrid: 155 PS, 1360 kg, Radstand 2,70 m (60 % vorn), 6-Gang
+    focus: { mass: 1360, a: 1.08, b: 1.62, wheelR: 0.322, trackW: 1.56, curve: 'ecoboost3', maxTorque: 210, idle: 800, redline: 6500,
+      gears: [0, 3.73, 2.05, 1.36, 1.03, 0.82, 0.69], final: 4.06, drag: 0.38, rollRes: 12, cgH: 0.53 },
+    // VW Polo 6R (2013) 1.2 TSI: 105 PS / 175 Nm, 1090 kg, Radstand 2,47 m, 6-Gang
+    polo: { mass: 1090, a: 0.99, b: 1.48, wheelR: 0.30, trackW: 1.46, curve: 'tsi', maxTorque: 175, idle: 750, redline: 6200,
+      gears: [0, 3.77, 2.09, 1.47, 1.10, 0.89, 0.73], final: 3.62, drag: 0.37, rollRes: 11, cgH: 0.54 },
     g31: { mass: 1840, a: 1.49, b: 1.485, wheelR: 0.335, trackW: 1.60, curve: 'diesel', maxTorque: 620, idle: 750, redline: 5000, gears: [0, 4.0, 2.5, 1.68, 1.28, 1.0, 0.80], final: 3.15, drag: 0.40, diesel: true }
   };
   // Motorvarianten je Auto (Index 0 = Serie). Werte überschreiben die Grunddaten oben.
@@ -80,6 +90,18 @@
       { key: 'fusion', badge: ' ', name: '1.6 16V', code: '1,6-l-Duratec-Vierzylinder' },
       { key: 'fusiond', badge: 'TDCi', name: '1.4 TDCi', code: '1,4-l-TDCi-Vierzylinder-Diesel', diesel: true,
         curve: 'diesel', maxTorque: 160, idle: 800, redline: 4600, final: 3.37, massAdd: 30 }
+    ],
+    focus: [
+      { key: 'focus', badge: 'ST-LINE', name: '1.0 EcoBoost', code: '1,0-l-EcoBoost-Dreizylinder (Mildhybrid)' },
+      { key: 'focusst', badge: 'ST', name: 'ST 2.3 EcoBoost', code: '2,3-l-EcoBoost-Vierzylinder-Turbo',
+        curve: 'turbo', maxTorque: 390, idle: 850, redline: 6800, gears: [0, 3.31, 1.95, 1.33, 1.03, 0.82, 0.67], final: 3.82, massAdd: 140 }
+    ],
+    polo: [
+      { key: 'polo', badge: 'TSI', name: '1.2 TSI', code: '1,2-l-TSI-Vierzylinder' },
+      { key: 'pologti', badge: 'GTI', name: 'GTI 1.4 TSI', code: '1,4-l-TSI mit Kompressor und Turbo',
+        curve: 'turbo', maxTorque: 250, idle: 800, redline: 6800, gears: [0, 3.5, 2.09, 1.47, 1.10, 0.89, 0.73], final: 3.94, massAdd: 100 },
+      { key: 'polod', badge: 'TDI', name: '1.6 TDI', code: '1,6-l-TDI-Vierzylinder-Diesel', diesel: true,
+        curve: 'diesel', maxTorque: 215, idle: 800, redline: 4800, final: 3.2, massAdd: 50 }
     ],
     zipfer: [{ key: 'zipfer', badge: '', name: 'Zipfer Märzen', code: 'Märzen-Reihensechser' }]
   };

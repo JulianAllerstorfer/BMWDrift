@@ -304,6 +304,135 @@
     exhaust: { type: 'round', tips: [[-0.42, 0.27, 0.028]] }
   };
 
+  // ------------------------------------------------------------------ Ford Focus (Mk4 Facelift, 2025)
+  // Fünftürer ST-Line: Länge 4382 mm, Breite 1825 mm, Höhe 1471 mm, Radstand 2700 mm, Spur 1567/1550 mm.
+  // Kurzer Überhang hinten, lange flache Frontscheibe, Dach fällt hinten früh ab, Spoiler über der schrägen Heckscheibe.
+  // Facelift-Gesicht: großer schwarzer Wabengrill mit dem Ford-Oval in der Mitte, schmale spitze LED-Scheinwerfer,
+  // seitliche Lufteinlässe; schwarze Spiegelkappen, kleines Dreiecksfenster hinten, waagrechte LED-Rückleuchten.
+  M.focus = {
+    id: 'focus', brand: 'ford', logo: 'Focus', logoSub: 'Ford Focus ST-Line', name: 'Ford Focus', sub: 'ST-Line · Mk4 · 2025', engine: '1,0-l-EcoBoost-Dreizylinder', hatch: true,
+    XF: 2.27, XR: -2.112, AXF: 1.35, AXR: -1.35, wheelR: 0.322, archR: 0.405, archCY: 0.34,
+    GH_F: 1.06, GH_R: -2.06, trackHalf: 0.785, faceF: 1.95, faceR: -1.85,
+    halfW: [[-2.112, 0.70], [-2.10, 0.80], [-2.07, 0.855], [-1.98, 0.888], [-1.75, 0.902], [-1.35, 0.908], [-0.9, 0.898], [0, 0.893], [0.9, 0.898], [1.35, 0.905], [1.75, 0.892], [1.98, 0.872], [2.12, 0.835], [2.21, 0.78], [2.255, 0.70], [2.27, 0.61]],
+    yBot: [[-2.112, 0.42], [-2.10, 0.33], [-2.06, 0.27], [-1.95, 0.23], [-1.7, 0.21], [0, 0.195], [1.8, 0.195], [2.05, 0.18], [2.17, 0.19], [2.24, 0.23], [2.27, 0.30]],
+    yShoulder: [[-2.112, 0.64], [-2.08, 0.79], [-1.99, 0.885], [-1.6, 0.91], [-0.8, 0.885], [0, 0.862], [1.0, 0.835], [1.6, 0.805], [1.95, 0.77], [2.12, 0.72], [2.22, 0.66], [2.27, 0.57]],
+    yDeck: [[-2.112, 0.80], [-2.10, 0.90], [-2.085, 0.965], [-2.06, 1.005], [-2.0, 1.035], [-1.8, 1.05], [-1.4, 1.038], [-0.8, 1.008], [0.0, 0.977], [0.7, 0.952], [1.06, 0.938], [1.4, 0.92], [1.75, 0.895], [2.0, 0.875], [2.13, 0.85], [2.2, 0.822], [2.24, 0.78], [2.262, 0.71], [2.27, 0.63]],
+    roofLine: [[-2.06, 1.03], [-2.03, 1.09], [-1.98, 1.17], [-1.92, 1.25], [-1.86, 1.30], [-1.80, 1.34], [-1.70, 1.368], [-1.4, 1.40], [-1.0, 1.43], [-0.5, 1.455], [-0.2, 1.46], [0.05, 1.443], [0.25, 1.39], [0.5, 1.29], [0.78, 1.14], [1.06, 0.97]],
+    roofHW: [[-2.06, 0.74], [-1.95, 0.70], [-1.8, 0.672], [-1.0, 0.665], [-0.3, 0.665], [0.1, 0.675], [0.4, 0.71], [0.75, 0.76], [1.06, 0.80]],
+    win: {
+      chrome: null,   // ST-Line: Fensterrahmen glänzend schwarz
+      dlo: [[-1.44, 0.0], [1.03, 0.0], [1.03, 0.975], [-1.13, 0.975], [-1.22, 0.93], [-1.33, 0.62], [-1.42, 0.16]],
+      glass: [
+        [[-0.06, 0.075], [0.66, 0.075], [0.66, 0.40], [0.99, 0.93], [-0.06, 0.93]],                                   // Vordertür (vorn das schwarze Spiegeldreieck)
+        [[-0.20, 0.075], [-1.02, 0.075], [-1.02, 0.93], [-0.20, 0.93]],                                               // Hintertür
+        [[-1.085, 0.075], [-1.39, 0.075], [-1.375, 0.16], [-1.30, 0.62], [-1.21, 0.88], [-1.165, 0.93], [-1.085, 0.93]]   // Dreiecksfenster in der C-Säule
+      ],
+      ws: [0.06, 1.05, 0.10, 1.01], rw: [-2.065, -1.80, -2.045, -1.83], rwInset: 0.05
+    },
+    gaps: {
+      lines: [[[0.86, 0.27], [0.86, 0.84], [0.97, 0.96]], [[-0.13, 0.27], [-0.13, 1.03]], [[1.86, 0.42], [1.92, 0.57], [2.0, 0.65], [2.08, 0.69]], [[-1.72, 0.42], [-1.82, 0.56], [-2.112, 0.57]]],
+      rearDoor: -1.08, doorFront: 0.86, doorBottom: 0.27, hood: [1.04, 2.13]
+    },
+    molding: null, charLine: [2.05, -2.07], swage: [[0.98, 0.43], [-1.02, 0.50]], hoodV: [1.12, 2.12, 0.52, 0.40], shoulderR: 0.04,
+    kidney: null,
+    // großer Wabengrill (glänzend schwarzer Rahmen), Kennzeichen sitzt unten im Grill, Oval in der Mitte
+    grille: { poly: [[0, 0.385], [0.33, 0.385], [0.41, 0.43], [0.462, 0.555], [0.452, 0.675], [0.415, 0.738], [0, 0.748]], bars: 0, frame: 0.016, frameMat: 'headBlack', mesh: 'hex' },
+    oval: { f: [0.645, 0.185, 0.072, 0.014], r: [0.935, 0.15, 0.058, 0.008] },
+    // schmale, spitz nach innen zulaufende LED-Scheinwerfer: Tagfahrlicht oben entlang und innen als Haken nach unten
+    head: { dark: true, bowl: 0.6, drlW: 0.0048,
+      poly: [[0.415, 0.752], [0.47, 0.738], [0.58, 0.736], [0.70, 0.75], [0.79, 0.772], [0.835, 0.792], [0.85, 0.812], [0.83, 0.828], [0.74, 0.828], [0.62, 0.815], [0.50, 0.795], [0.43, 0.78]],
+      lenses: [[0.585, 0.768, 0.022], [0.70, 0.782, 0.023]], rings: false,
+      drl: [[[0.44, 0.774], [0.52, 0.788], [0.63, 0.806], [0.74, 0.818], [0.825, 0.82]], [[0.44, 0.774], [0.455, 0.756], [0.50, 0.748]]], ind: null, indA: null },
+    mirrorCap: 'carbon',
+    // schmaler Einlass unter dem Grill, außen hohe Luftvorhänge (ST-Line)
+    intake: { centerPoly: [[-0.52, 0.34], [0.52, 0.34], [0.48, 0.285], [-0.48, 0.285]], centerRound: 0.015, bars: [],
+      pocketPoly: [[0.56, 0.60], [0.70, 0.585], [0.80, 0.555], [0.83, 0.47], [0.80, 0.36], [0.66, 0.33], [0.57, 0.36], [0.62, 0.47]], pocketRound: 0.02, fog: null },
+    frontDecals: [
+      { p: [[0.585, 0.37], [0.645, 0.47], [0.60, 0.575]], line: 0.006, mat: 'headBlack', off: 0.006 },        // Kante in den Luftvorhängen
+      { p: [[-0.70, 0.30], [0.70, 0.30]], line: 0.02, mat: 'trim', off: 0.005, both: false }                 // schwarze Lippe
+    ],
+    plateF: [0.44, 0.548], tow: [0.30, 0.36], split: { y: 0.18, w: 0.86, ref: 0.26 },
+    mirror: [0.80, 1.07, 1.01], handles: [0.06, -0.93], handleY: 0.905, sideInd: null,
+    rails: null, antenna: { type: 'fin', x: -1.62 },
+    roofSpoiler: -1.75, spoilerFlush: true, spoilerLen: 0.19, spoilerDrop: 0.025, wiper: [1.0, 0.99], rearWiper: [-1.97, 1.17],
+    // waagrechte LED-Rückleuchten vom Kotflügel in die Heckklappe, innen spitz, mit zwei Leuchtbändern
+    tail: { poly: [[0.40, 0.958], [0.50, 0.925], [0.70, 0.898], [0.85, 0.888], [0.872, 0.912], [0.858, 0.962], [0.81, 0.99], [0.70, 0.998], [0.50, 0.993], [0.40, 0.978]], deep: true, split: 0.62, lineW: 0.012,
+      inner: [], lines: [[[0.44, 0.968], [0.60, 0.978], [0.75, 0.976], [0.83, 0.966]], [[0.64, 0.915], [0.80, 0.905], [0.85, 0.912]]],
+      rev: [[0.47, 0.935], [0.56, 0.925], [0.56, 0.94], [0.47, 0.95]],
+      side: [[-2.10, 0.888], [-2.02, 0.893], [-1.95, 0.925], [-1.925, 0.958], [-1.97, 0.985], [-2.10, 0.995]],
+      sideLines: [[[-2.095, 0.97], [-2.0, 0.972], [-1.95, 0.962]]] },
+    tailgate: { half: 0.62, y0: 0.57, y1: 1.03 }, plateR: [0.63, 0.74], chromeBar: null,
+    badges: [{ t: 'ST-LINE', z: 0.40, y: 0.855, font: 'bold 40px Arial', w: 0.15 }, { t: 'F O C U S', z: -0.40, y: 0.855, font: 'bold 42px Arial', w: 0.2 }],
+    diffuser: [[-0.80, 0.25], [0.80, 0.25], [0.76, 0.40], [-0.76, 0.40]], reflectors: [0.64, 0.79, 0.43, 0.45],
+    exhaust: { type: 'trap', tips: [[-0.52, 0.31, 0.13, 0.06], [0.52, 0.31, 0.13, 0.06]] }
+  };
+
+  // ------------------------------------------------------------------ VW Polo (6R, 2013)
+  // Fünftürer vor dem Facelift: Länge 3970 mm, Breite 1682 mm, Höhe 1462 mm, Radstand 2470 mm, Spur 1463/1456 mm.
+  // Flacher waagrechter Grill, der mit den Scheinwerfern ein durchgehendes Band bildet, großes VW-Zeichen,
+  // Klarglas-Scheinwerfer mit zwei runden Reflektoren, trapezförmiger unterer Einlass mit Nebelscheinwerfern,
+  // scharfe „Tornadolinie“ auf Griffhöhe, breite C-Säule, Rückleuchten nur in den Ecken, VW-Zeichen als Heckklappengriff.
+  M.polo = {
+    id: 'polo', brand: 'vw', logo: 'Polo', logoSub: 'Volkswagen Polo', name: 'VW Polo', sub: '6R · 5-Türer · 2013', engine: '1,2-l-TSI-Vierzylinder', hatch: true,
+    XF: 2.035, XR: -1.935, AXF: 1.235, AXR: -1.235, wheelR: 0.30, archR: 0.385, archCY: 0.322,
+    GH_F: 0.95, GH_R: -1.86, trackHalf: 0.73, faceF: 1.72, faceR: -1.66,
+    halfW: [[-1.935, 0.66], [-1.925, 0.75], [-1.90, 0.80], [-1.83, 0.825], [-1.6, 0.835], [-1.235, 0.84], [-0.6, 0.835], [0, 0.833], [0.6, 0.835], [1.235, 0.838], [1.6, 0.83], [1.82, 0.812], [1.93, 0.785], [1.99, 0.745], [2.02, 0.69], [2.035, 0.60]],
+    yBot: [[-1.935, 0.40], [-1.925, 0.32], [-1.89, 0.265], [-1.8, 0.235], [-1.55, 0.215], [0, 0.20], [1.55, 0.205], [1.85, 0.21], [1.96, 0.23], [2.015, 0.27], [2.035, 0.32]],
+    yShoulder: [[-1.935, 0.64], [-1.915, 0.80], [-1.86, 0.905], [-1.7, 0.925], [-1.3, 0.905], [-0.8, 0.885], [0, 0.865], [0.8, 0.845], [1.3, 0.82], [1.65, 0.795], [1.88, 0.76], [1.98, 0.72], [2.035, 0.62]],
+    yDeck: [[-1.935, 0.78], [-1.925, 0.86], [-1.91, 0.92], [-1.885, 0.96], [-1.86, 0.985], [-1.75, 0.995], [-1.2, 0.978], [-0.5, 0.96], [0.3, 0.945], [0.95, 0.932], [1.2, 0.905], [1.5, 0.878], [1.75, 0.858], [1.9, 0.842], [1.97, 0.822], [2.005, 0.792], [2.025, 0.74], [2.035, 0.66]],
+    roofLine: [[-1.86, 0.99], [-1.835, 1.06], [-1.795, 1.14], [-1.745, 1.22], [-1.69, 1.285], [-1.62, 1.33], [-1.5, 1.362], [-1.2, 1.398], [-0.7, 1.426], [-0.3, 1.438], [-0.05, 1.43], [0.12, 1.40], [0.35, 1.31], [0.62, 1.17], [0.95, 0.95]],
+    roofHW: [[-1.86, 0.70], [-1.75, 0.665], [-1.5, 0.645], [-0.5, 0.645], [0.0, 0.65], [0.3, 0.68], [0.6, 0.72], [0.95, 0.77]],
+    win: {
+      chrome: null,
+      dlo: [[-1.20, 0.0], [0.92, 0.0], [0.92, 0.975], [-0.96, 0.975], [-1.03, 0.93], [-1.12, 0.60], [-1.19, 0.15]],
+      glass: [
+        [[-0.10, 0.075], [0.60, 0.075], [0.60, 0.38], [0.88, 0.93], [-0.10, 0.93]],                                     // Vordertür
+        [[-0.24, 0.075], [-0.88, 0.075], [-0.88, 0.93], [-0.24, 0.93]],                                                 // Hintertür
+        [[-0.93, 0.075], [-1.15, 0.075], [-1.13, 0.16], [-1.06, 0.58], [-0.99, 0.86], [-0.955, 0.93], [-0.93, 0.93]]    // festes Dreieck hinten in der Tür
+      ],
+      ws: [0.05, 0.94, 0.09, 0.90], rw: [-1.865, -1.60, -1.85, -1.625], rwInset: 0.06
+    },
+    gaps: {
+      lines: [[[0.84, 0.27], [0.84, 0.82], [0.90, 0.94]], [[-0.17, 0.27], [-0.17, 0.98]], [[1.70, 0.40], [1.76, 0.55], [1.84, 0.64], [1.92, 0.70]], [[-1.62, 0.40], [-1.70, 0.53], [-1.935, 0.54]]],
+      rearDoor: -1.12, doorFront: 0.84, doorBottom: 0.27, hood: [0.93, 1.93]
+    },
+    // Tornadolinie (scharf, auf Höhe der Griffe) und untere Sicke
+    molding: null, charLine: [1.95, -1.90], swage: [[0.82, 0.42], [-1.05, 0.44]], hoodV: [1.0, 1.93, 0.48, 0.19], shoulderR: 0.02,
+    kidney: null,
+    // flacher schwarzer Grill mit zwei Chromstäben, der direkt an die Scheinwerfer anschließt
+    grille: { poly: [[0, 0.655], [0.24, 0.658], [0.30, 0.664], [0.318, 0.69], [0.316, 0.745], [0, 0.752]], bars: 2, barMat: 'chrome', frame: 0.008, frameMat: 'headBlack' },
+    vwLogo: { f: [0.705, 0.064, 0.016], r: [0.868, 0.058, 0.008] },
+    // Klarglas-Scheinwerfer: innen großer, außen kleinerer Rundreflektor, Blinker außen in der Spitze
+    head: { style: 'reflector', ringW: 0.0036,
+      poly: [[0.322, 0.646], [0.45, 0.644], [0.62, 0.65], [0.715, 0.667], [0.765, 0.70], [0.788, 0.75], [0.782, 0.792], [0.755, 0.81], [0.68, 0.804], [0.52, 0.797], [0.40, 0.792], [0.322, 0.787]],
+      lenses: [[0.408, 0.717, 0.056], [0.556, 0.721, 0.048]], rings: false, drl: [],
+      ind: [[0.635, 0.66], [0.70, 0.671], [0.755, 0.702], [0.775, 0.75], [0.77, 0.79], [0.635, 0.79]], indA: arc(0.715, 0.733, 0.02, 0.018, 12, 0, 330) },
+    // unterer Einlass trapezförmig mit zwei Querstegen, Nebelscheinwerfer außen in schrägen Taschen mit Chromspange
+    intake: { centerPoly: [[-0.40, 0.485], [0.40, 0.485], [0.475, 0.32], [-0.475, 0.32]], centerRound: 0.03, bars: [0.37, 0.425],
+      pocketPoly: [[0.55, 0.455], [0.74, 0.475], [0.785, 0.43], [0.772, 0.35], [0.58, 0.335], [0.53, 0.38]], pocketRound: 0.02, fog: [0.685, 0.403, 0.034] },
+    frontDecals: [
+      { p: [[0.56, 0.474], [0.745, 0.492]], line: 0.008, mat: 'chrome', off: 0.006 },                              // Chromspange über dem Nebelscheinwerfer
+      { p: [[0.33, 0.645], [0.60, 0.645], [0.79, 0.67]], line: 0.004, mat: 'dark', off: 0.004 }                     // Fuge Stoßfänger unter den Scheinwerfern
+    ],
+    plateF: [0.515, 0.625], tow: [0.30, 0.42], split: { y: 0.21, w: 0.80, ref: 0.27 },
+    mirror: [0.72, 1.0, 0.95], handles: [0.0, -0.96], handleY: 0.865, sideInd: null,
+    rails: null, antenna: { type: 'stick', x: -1.3 },
+    roofSpoiler: -1.57, spoilerFlush: true, spoilerLen: 0.15, spoilerDrop: 0.03, wiper: [0.9, 0.96], rearWiper: [-1.76, 1.13],
+    // Rückleuchten nur in den Ecken: außen rot, innen hellroter Kern, unten innen das weiße Rückfahrlicht
+    tail: { poly: [[0.47, 0.84], [0.78, 0.818], [0.80, 0.84], [0.792, 0.925], [0.758, 0.97], [0.70, 0.983], [0.50, 0.976], [0.45, 0.92]],
+      inner: [[[0.52, 0.89], [0.77, 0.872], [0.772, 0.925], [0.745, 0.958], [0.52, 0.96]]],
+      rev: [[0.49, 0.852], [0.63, 0.844], [0.63, 0.872], [0.49, 0.879]],
+      side: [[-1.875, 0.818], [-1.83, 0.822], [-1.775, 0.85], [-1.76, 0.92], [-1.80, 0.965], [-1.875, 0.975]],
+      sideIn: [[-1.87, 0.868], [-1.81, 0.864], [-1.785, 0.92], [-1.81, 0.952], [-1.87, 0.955]] },
+    tailgate: { half: 0.50, y0: 0.56, y1: 0.99 }, plateR: [0.625, 0.735], chromeBar: null,
+    rearDecals: [
+      { p: [[-0.31, 0.605], [0.31, 0.605], [0.33, 0.755], [-0.33, 0.755]], mat: 'shade', both: false, off: 0.003, round: 0.02 }   // Kennzeichenmulde
+    ],
+    badges: [{ t: 'TSI', z: 0.34, y: 0.79, font: 'bold 44px Arial', w: 0.09 }, { t: 'POLO', z: -0.34, y: 0.79, font: 'bold 46px Arial', w: 0.13 }],
+    diffuser: [[-0.78, 0.27], [0.78, 0.27], [0.75, 0.36], [-0.75, 0.36]], reflectors: [0.58, 0.74, 0.40, 0.42],
+    exhaust: { type: 'round', tips: [[-0.45, 0.27, 0.03]] }
+  };
+
   // ------------------------------------------------------------------ Traktor (eigener Aufbau in tractor.js)
   M.tractor = { id: 'tractor', logo: 'Neiwirth', name: 'Neiwirth', sub: 'Traktor · bis ca. 130 km/h', engine: 'Vierzylinder-Turbodiesel', diesel: true, tractor: true, badges: [] };
 
@@ -318,5 +447,5 @@
   M.zipfer = { id: 'zipfer', logo: 'Zipfer', name: 'Zipfer Märzen', sub: 'Fahrende Bierflasche · bis ca. 130 km/h', engine: 'Märzen-Reihensechser', badges: [] };
 
   window.CAR_MODELS = M;
-  window.CAR_ORDER = ['e46', 'f21', 'f31', 'g31', 'fusion', 'tractor', 'moped', 'zipfer', 'wheelchair', 'rollator'];
+  window.CAR_ORDER = ['e46', 'f21', 'f31', 'g31', 'fusion', 'focus', 'polo', 'tractor', 'moped', 'zipfer', 'wheelchair', 'rollator'];
 })();
