@@ -96,7 +96,9 @@
     { name: 'Abgefahren', muF: 0.92, muR: 0.74, slide: 0.9, heat: 1.2 },
     // Rennreifen: sehr viel Grip, hinten mehr als vorne (Heck bleibt stabil), späterer Haftabriss,
     // und nach dem Abriss bleiben ~95 % Grip -> kaum Rutschen, zum Rennenfahren statt Driften
-    { name: 'Rennreifen', muF: 1.6, muR: 1.75, slide: 0.95, heat: 0.6, spMul: 1.3 }
+    { name: 'Rennreifen', muF: 1.6, muR: 1.75, slide: 0.95, heat: 0.6, spMul: 1.3 },
+    // Klebereifen: 100 % Grip – nach dem Haftmaximum fällt die Kraft gar nicht mehr ab, nichts rutscht weg
+    { name: 'Klebereifen', muF: 1.9, muR: 2.1, slide: 1.0, heat: 0.4, spMul: 1.5 }
   ];
 
   const P = {};
@@ -335,7 +337,7 @@
       const FxR = rf.fx, FyR = rf.fy;
 
       // ---- Vorderachse (frei rollend, ABS) ----
-      const FyFraw = -FmaxF * curve(Math.abs(this.aF) * 1.0, spF * 1.15, Math.min(0.95, P.slide + 0.06)) * Math.sign(this.aF);
+      const FyFraw = -FmaxF * curve(Math.abs(this.aF) * 1.0, spF * 1.15, Math.max(P.slide, Math.min(0.95, P.slide + 0.06))) * Math.sign(this.aF);
       let FxF = 0;
       if (brakeFront > 0 && Math.abs(u) > 0.2) FxF = -Math.sign(u) * Math.min(brakeFront, FmaxF * 0.98);
       const capF = Math.sqrt(Math.max(0, FmaxF * FmaxF - FxF * FxF));
