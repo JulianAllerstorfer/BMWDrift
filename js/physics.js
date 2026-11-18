@@ -93,7 +93,10 @@
     { name: 'Straße', muF: 1.08, muR: 1.0, slide: 0.84, heat: 1.0 },
     { name: 'Semi-Slick', muF: 1.28, muR: 1.2, slide: 0.76, heat: 0.8 },
     { name: 'Drift-Reifen', muF: 1.06, muR: 0.9, slide: 0.92, heat: 1.35 },
-    { name: 'Abgefahren', muF: 0.92, muR: 0.74, slide: 0.9, heat: 1.2 }
+    { name: 'Abgefahren', muF: 0.92, muR: 0.74, slide: 0.9, heat: 1.2 },
+    // Rennreifen: sehr viel Grip, hinten mehr als vorne (Heck bleibt stabil), späterer Haftabriss,
+    // und nach dem Abriss bleiben ~95 % Grip -> kaum Rutschen, zum Rennenfahren statt Driften
+    { name: 'Rennreifen', muF: 1.6, muR: 1.75, slide: 0.95, heat: 0.6, spMul: 1.3 }
   ];
 
   const P = {};
@@ -110,7 +113,7 @@
       gears: m.gears, final: m.final, eff: 0.88, idle: m.idle, redline: m.redline, maxTorque: m.maxTorque, curve: CURVES[m.curve], diesel: !!m.diesel, electric: !!m.electric, flames: !!m.flames,
       brake: 11000 * m.mass / 1420, brakeBias: 0.64, drag: m.drag, roll: m.rollRes || 14,
       maxSteer: 0.62, lock: 0.95, steerRate: 5.5,
-      muF: 1.08, muR: 1.0, slide: 0.84, heat: 1.0, loadSens: 0.11, relax: 0.42,
+      muF: 1.08, muR: 1.0, slide: 0.84, heat: 1.0, spMul: 1, loadSens: 0.11, relax: 0.42,
       hbTorque: 3200, lsd: 0.8, rollBiasF: 0.55, rollK: 1, pressF: 2.2, pressR: 2.2, turbo: 0,
       iWheel: m.iWheel || 2.6, iEngine: m.iEngine || 0.22
     });
@@ -133,7 +136,7 @@
     P.lock = k(t.lock, 54) * Math.PI / 180;
     P.steerRate = 5.5 * k(t.steerSpeed, 100) / 100;
     const ti = TIRES[k(t.tires, 0) | 0] || TIRES[0];
-    P.muF = ti.muF; P.muR = ti.muR; P.slide = ti.slide; P.heat = ti.heat;
+    P.muF = ti.muF; P.muR = ti.muR; P.slide = ti.slide; P.heat = ti.heat; P.spMul = ti.spMul || 1;
     if (m.muRMul) P.muR *= m.muRMul;                              // fahrzeugeigene Drift-Abstimmung
     if (m.slideMin) P.slide = Math.max(P.slide, m.slideMin);
     P.hbTorque = 3200 * k(t.hbrake, 100) / 100;
@@ -238,7 +241,7 @@
       const muF = P.muF * tempGrip(this.tempF) * pressMu(P.pressF);
       const muR = P.muR * tempGrip(this.tempR) * pressMu(P.pressR);
       const FmaxF = muF * gF.grip, FmaxR = muR * gR.grip;
-      const spF = pressSp(P.pressF), spR = pressSp(P.pressR);
+      const spF = pressSp(P.pressF) * P.spMul, spR = pressSp(P.pressR) * P.spMul;
 
       // ---- Schräglauf mit Einlaufverzögerung ----
       const wl = u * Math.cos(d) - vFront * Math.sin(d);

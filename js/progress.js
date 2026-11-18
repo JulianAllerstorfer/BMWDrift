@@ -32,7 +32,7 @@
   };
   const PART_ORDER = ['power', 'turbo', 'weight', 'brake', 'als'];
   // Reifen: 0 Straße und 3 Abgefahren gibt's gratis
-  const TIRES = { 1: { lvl: 6, base: 900 }, 2: { lvl: 3, base: 500 } };
+  const TIRES = { 1: { lvl: 6, base: 900 }, 2: { lvl: 3, base: 500 }, 4: { lvl: 8, base: 1400 } };
   // Lacke: die ersten vier sind Serie, der Rest kostet
   const PAINT_LVL = [1, 1, 1, 1, 2, 3, 4, 6, 8, 10, 12, 15, 5, 7, 9, 11, 13, 16];
   // Lack-Finish: Glanz ist Serie, der Rest wird einmal gekauft und gilt für alle Fahrzeuge
