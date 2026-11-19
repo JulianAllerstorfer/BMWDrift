@@ -42,7 +42,8 @@
       gears: [0, 2.6, 1.9, 1.45, 1.18, 1.0, 0.86], final: 6.3, drag: 0.16, rollRes: 5, electric: true, flames: true, izMul: 4, cgH: 0.45, iWheel: 0.35, iEngine: 0.03,
       muRMul: 0.88, slideMin: 0.93 },   // Jonny: hinten etwas weniger Grip, gutmütiger Abriss, ruhigeres Eindrehen -> mehr Winkel, leichter zu halten
     rollator: { mass: 230, a: 0.30, b: 0.25, wheelR: 0.11, trackW: 0.54, curve: 'electric', maxTorque: 450, idle: 600, redline: 9000,
-      gears: [0, 2.6, 1.9, 1.45, 1.18, 1.0, 0.86], final: 1.38, drag: 0.3, rollRes: 5, electric: true, izMul: 3.6, cgH: 0.5, iWheel: 0.08, iEngine: 0.03 },
+      gears: [0, 2.6, 1.9, 1.45, 1.18, 1.0, 0.86], final: 1.38, drag: 0.3, rollRes: 5, electric: true, izMul: 3.6, cgH: 0.5, iWheel: 0.08, iEngine: 0.03,
+      glue: true },   // Rollator: klebt immer auf der Straße, egal welche Reifen – kein Driften
     // Moped 50 ccm (stark getunt): leicht, Einspur, Fliehkraftkupplung, ~130 km/h
     moped: { mass: 165, a: 0.62, b: 0.58, wheelR: 0.29, trackW: 0.8, curve: 'twostroke', maxTorque: 21.5, idle: 1900, redline: 10800,
       gears: [0, 3.1, 2.25, 1.75, 1.42, 1.18, 1.0], final: 8.6, drag: 0.26, rollRes: 2, na: true, izMul: 3.0, cgH: 0.4,
@@ -164,6 +165,10 @@
     if (m.muRMul) P.muR *= m.muRMul;                              // fahrzeugeigene Drift-Abstimmung
     if (m.slideMin) P.slide = Math.max(P.slide, m.slideMin);
     P.hbTorque = 3200 * k(t.hbrake, 100) / 100;
+    if (m.glue) {                                                  // Kleber-Fahrwerk: mehr Grip als Klebereifen, hinten noch mehr (kein Übersteuern),
+      P.muF = Math.max(P.muF, 2.2); P.muR = Math.max(P.muR, 2.6);  // nach dem Haftmaximum kein Abfall, Handbremse ohne Wirkung
+      P.slide = 1.0; P.heat = Math.min(P.heat, 0.4); P.spMul = Math.max(P.spMul, 1.5); P.hbTorque = 0;
+    }
     P.rollK = k(t.roll, 100) / 100;
     P.pressF = k(t.pressF, 2.2); P.pressR = k(t.pressR, 2.2);
     P.lsd = k(t.lsd, 80) / 100;
