@@ -70,6 +70,20 @@
     return pts;
   }
 
+  // Die Gerade: 5 km schnurgerade (Start im Westen, Fahrt nach Osten), Wendeschleife, parallele Rückfahrt, Wendeschleife
+  function straightCtrl() {
+    const X0 = -2500, X1 = 2530, ZA = 40, R = 110, ZB = ZA - 2 * R, pts = [];
+    // Stützpunkte zu den Enden hin dichter, sonst schwingt der Spline aus der Wendeschleife in die Gerade nach
+    const xs = [X0, X0 + 8, X0 + 20, X0 + 40, X0 + 70, X0 + 110];
+    for (let x = X0 + 250; x < X1 - 110; x += 250) xs.push(x);
+    xs.push(X1 - 110, X1 - 70, X1 - 40, X1 - 20, X1 - 8, X1);
+    for (const x of xs) pts.push([x, ZA]);
+    for (let i = 1; i < 12; i++) { const a = Math.PI / 2 - i / 12 * Math.PI; pts.push([X1 + Math.cos(a) * R, ZA - R + Math.sin(a) * R]); }   // Osten: Wendeschleife nach Süden
+    for (const x of xs) pts.push([X0 + X1 - x, ZB]);                     // Rückfahrt von Osten nach Westen
+    for (let i = 1; i < 12; i++) { const a = -Math.PI / 2 - i / 12 * Math.PI; pts.push([X0 + Math.cos(a) * R, ZA - R + Math.sin(a) * R]); }  // Westen: zurück auf die Startgerade
+    return pts;
+  }
+
   const MAPS = {
     hakone: {
       id: 'hakone', name: 'Hakone Lane', desc: 'Kompakter Drift-Kurs · 0,8 km · Werkstatt', fuel: false,
@@ -115,6 +129,16 @@
       pit: [[86, -8], [85, 8], [79, 22], [70, 34]],
       lift: { x0: 99.5, x1: 105, z0: -46.5, z1: -37 },
       gas: null, world: 2.2, mountain: true
+    },
+    // Die Gerade: Werkstatt wie bei Hakone, nur an den Anfang der 5-km-Geraden verschoben
+    straight: {
+      id: 'straight', name: 'Die Gerade', desc: 'Vollgas · 5 km schnurgerade · Wendeschleifen · Werkstatt', fuel: false,
+      ctrl: straightCtrl(),
+      hall: { x0: -2337, x1: -2293, z0: -48, z1: -34 },
+      yard: { x0: -2337, x1: -2293, z0: -32, z1: -6 },
+      pit: [[-2314, -8], [-2315, 8], [-2321, 22], [-2330, 34]],
+      lift: { x0: -2300.5, x1: -2295, z0: -46.5, z1: -37 },
+      gas: null, world: 2.0
     }
   };
 
@@ -1347,5 +1371,5 @@
     };
   }
 
-  window.Track = { build, MAPS, ORDER: ['hakone', 'bridge', 'big', 'mountain'], _buildPath: buildPath };
+  window.Track = { build, MAPS, ORDER: ['hakone', 'bridge', 'big', 'mountain', 'straight'], _buildPath: buildPath };
 })();

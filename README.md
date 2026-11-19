@@ -56,6 +56,7 @@ Der Reihensechser blubbert tief und knallt gern im Schub. Beim Gasgeben spritzt 
 |---|---|---|
 | **Hakone Lane** | 0,8 km | kompakter Drift-Kurs, Werkstatt im Infield |
 | **Großer Ring** | 2,0 km | 22 Kurven: S-Kurven, schnelle Bögen und enge Ecken, Werkstatt **und Tankstelle** im Infield |
+| **Die Gerade** | 10,75 km | 5 km schnurgerade für Vollgas, am Ende eine Wendeschleife, parallele Rückfahrt und zurück auf die Gerade; Werkstatt am Anfang der Geraden |
 
 Die Strecke wählst du in der Garage im Tab **AUTO** unter „Strecke“.
 
