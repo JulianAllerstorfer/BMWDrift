@@ -37,7 +37,7 @@ Motoren: 1.2 TSI (105 PS), GTI 1.4 TSI mit Kompressor und Turbo (ca. 180 PS) ode
 Er hat eine Kabine mit Fahrer und eine Rundumleuchte. Der Ruß steigt aus dem Schornstein, der Sound tuckert tief.
 Lack- und Felgenfarbe lassen sich ändern. Die Kamera sitzt bei ihm höher, und die Motorhauben-Kamera ist die Sicht aus der Kabine.
 
-**Jonny's Rollstuhl und Rollator (Elektro):** beide mit E-Motor. Jonny's Rollstuhl hat ca. 200 PS und fährt bis ca. 180 km/h, der Rollator hat ca. 150 PS und fährt bis ca. 130 km/h.
+**Jonny's Rollstuhl und Rollator (Elektro):** beide mit E-Motor. Jonny's Rollstuhl hat ca. 200 PS und fährt bis ca. 180 km/h, der Rollator hat ca. 300 PS und fährt bis ca. 300 km/h.
 Der Rollstuhl hat große Speichenräder mit Sturz, Greifreifen und einen Akku mit blauer LED-Leiste. Gefahren wird er von Jonny: sein Kopf ist ein echtes Foto (`img/jonny.jpg`, vorn auf den Kopf projiziert), dazu dunkelgraues T-Shirt mit „Lolas“-Logo. Ein anderes Foto einfach als `img/jonny.jpg` ablegen (Kopf mit Haaren, Hochformat ca. 560×680). Beim Rollator steht der Fahrer hinten auf dem Trittbrett.
 Statt Motorbrummen hört man ein E-Motor-Surren. Kamera, Reifenqualm und Spuren sind an die kleine Größe angepasst.
 

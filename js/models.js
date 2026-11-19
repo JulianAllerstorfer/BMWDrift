@@ -438,7 +438,7 @@
 
   // ------------------------------------------------------------------ Elektro-Rollstuhl / -Rollator (eigener Aufbau in mobility.js)
   M.wheelchair = { id: 'wheelchair', logo: "Jonny's Rollstuhl", name: "Jonny's Rollstuhl", sub: 'Elektro-Renner · bis ca. 180 km/h', engine: 'Elektromotor', electric: true, badges: [] };
-  M.rollator = { id: 'rollator', logo: 'Rollator', name: 'Rollator', sub: 'Elektro-Renner · bis ca. 130 km/h', engine: 'Elektromotor', electric: true, badges: [] };
+  M.rollator = { id: 'rollator', logo: 'Rollator', name: 'Rollator', sub: 'Elektro-Renner · bis ca. 300 km/h', engine: 'Elektromotor', electric: true, badges: [] };
 
   // ------------------------------------------------------------------ Moped 50 ccm (eigener Aufbau in mobility.js)
   M.moped = { id: 'moped', logo: 'Moped 50', name: 'Moped 50', sub: '50 ccm · stark getunt · bis ca. 130 km/h', engine: 'Einzylinder-Zweitakter', twoStroke: true, badges: [] };

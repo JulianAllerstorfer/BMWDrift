@@ -37,12 +37,12 @@
     // Traktor: schwer, hoher Schwerpunkt, riesige Hinterräder, kurze Übersetzung, ~60 km/h Spitze
     tractor: { mass: 3300, a: 1.45, b: 1.15, wheelR: 0.82, trackW: 1.72, curve: 'tractor', maxTorque: 1450, idle: 750, redline: 2500,
       gears: [0, 3.2, 2.4, 1.85, 1.45, 1.15, 0.95], final: 6.2, drag: 0.95, diesel: true, cgH: 0.85, iWheel: 9 },
-    // Elektro-Rollstuhl und -Rollator: leicht, kurzer Radstand, E-Motor, ~130 km/h
+    // Elektro-Rollstuhl (~180 km/h) und -Rollator (~300 km/h): leicht, kurzer Radstand, E-Motor
     wheelchair: { mass: 240, a: 0.40, b: 0.34, wheelR: 0.30, trackW: 0.66, curve: 'electric', maxTorque: 270, idle: 600, redline: 9000,
       gears: [0, 2.6, 1.9, 1.45, 1.18, 1.0, 0.86], final: 6.3, drag: 0.16, rollRes: 5, electric: true, flames: true, izMul: 4, cgH: 0.45, iWheel: 0.35, iEngine: 0.03,
       muRMul: 0.88, slideMin: 0.93 },   // Jonny: hinten etwas weniger Grip, gutmütiger Abriss, ruhigeres Eindrehen -> mehr Winkel, leichter zu halten
-    rollator: { mass: 230, a: 0.30, b: 0.25, wheelR: 0.11, trackW: 0.54, curve: 'electric', maxTorque: 200, idle: 600, redline: 9000,
-      gears: [0, 2.6, 1.9, 1.45, 1.18, 1.0, 0.86], final: 2.93, drag: 0.5, electric: true, izMul: 3.6, cgH: 0.5, iWheel: 0.08, iEngine: 0.03 },
+    rollator: { mass: 230, a: 0.30, b: 0.25, wheelR: 0.11, trackW: 0.54, curve: 'electric', maxTorque: 450, idle: 600, redline: 9000,
+      gears: [0, 2.6, 1.9, 1.45, 1.18, 1.0, 0.86], final: 1.38, drag: 0.3, rollRes: 5, electric: true, izMul: 3.6, cgH: 0.5, iWheel: 0.08, iEngine: 0.03 },
     // Moped 50 ccm (stark getunt): leicht, Einspur, Fliehkraftkupplung, ~130 km/h
     moped: { mass: 165, a: 0.62, b: 0.58, wheelR: 0.29, trackW: 0.8, curve: 'twostroke', maxTorque: 21.5, idle: 1900, redline: 10800,
       gears: [0, 3.1, 2.25, 1.75, 1.42, 1.18, 1.0], final: 8.6, drag: 0.26, rollRes: 2, na: true, izMul: 3.0, cgH: 0.4,
