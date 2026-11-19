@@ -43,7 +43,7 @@
       muRMul: 0.88, slideMin: 0.93 },   // Jonny: hinten etwas weniger Grip, gutmütiger Abriss, ruhigeres Eindrehen -> mehr Winkel, leichter zu halten
     rollator: { mass: 230, a: 0.30, b: 0.25, wheelR: 0.11, trackW: 0.54, curve: 'electric', maxTorque: 450, idle: 600, redline: 9000,
       gears: [0, 2.6, 1.9, 1.45, 1.18, 1.0, 0.86], final: 1.38, drag: 0.3, rollRes: 5, electric: true, izMul: 3.6, cgH: 0.5, iWheel: 0.08, iEngine: 0.03,
-      glue: true },   // Rollator: klebt immer auf der Straße, egal welche Reifen – kein Driften
+      glue: true, glueG: 4.5 },   // Rollator: klebt immer auf der Straße, egal welche Reifen – kein Driften
     // Moped 50 ccm (stark getunt): leicht, Einspur, Fliehkraftkupplung, ~130 km/h
     moped: { mass: 165, a: 0.62, b: 0.58, wheelR: 0.29, trackW: 0.8, curve: 'twostroke', maxTorque: 21.5, idle: 1900, redline: 10800,
       gears: [0, 3.1, 2.25, 1.75, 1.42, 1.18, 1.0], final: 8.6, drag: 0.26, rollRes: 2, na: true, izMul: 3.0, cgH: 0.4,
@@ -156,6 +156,7 @@
     P.final = m.final * k(t.finalPct, 100) / 100;
     P.mass = m.mass * k(t.weightPct, 100) / 100;
     P.iz = 0.95 * P.mass * P.a * P.b * (P.base.izMul || 1);
+    P.glue = !!m.glue; P.glueG = m.glueG || 0;
     P.brake = 11000 * P.mass / 1420 * k(t.brakePower, 100) / 100;
     P.brakeBias = k(t.brakeBias, 64) / 100;
     P.lock = k(t.lock, 54) * Math.PI / 180;
@@ -166,7 +167,7 @@
     if (m.slideMin) P.slide = Math.max(P.slide, m.slideMin);
     P.hbTorque = 3200 * k(t.hbrake, 100) / 100;
     if (m.glue) {                                                  // Kleber-Fahrwerk: mehr Grip als Klebereifen, hinten noch mehr (kein Übersteuern),
-      P.muF = Math.max(P.muF, 2.2); P.muR = Math.max(P.muR, 2.6);  // nach dem Haftmaximum kein Abfall, Handbremse ohne Wirkung
+      P.muF = Math.max(P.muF, 3.0); P.muR = Math.max(P.muR, 3.5);  // nach dem Haftmaximum kein Abfall, Handbremse ohne Wirkung
       P.slide = 1.0; P.heat = Math.min(P.heat, 0.4); P.spMul = Math.max(P.spMul, 1.5); P.hbTorque = 0;
     }
     P.rollK = k(t.roll, 100) / 100;
@@ -248,7 +249,7 @@
       const speedK = Math.min(1, spd / 30);
       const maxIn = P.maxSteer * (1 - 0.42 * speedK) * (1 - dn) + P.lock * dn;
       this.steerIn += (inp.steer - this.steerIn) * Math.min(1, dt * 9);
-      let target = this.steerIn * maxIn + (spd > 3 ? align * this.assist * (1 - dn) : 0);
+      let target = this.steerIn * maxIn + (spd > 3 && !P.glue ? align * this.assist * (1 - dn) : 0);
       target = Math.max(-P.lock, Math.min(P.lock, target));
       this.steer += Math.max(-P.steerRate * dt, Math.min(P.steerRate * dt, target - this.steer));
       const d = this.steer;
@@ -389,6 +390,16 @@
       u += al * dt; w += aq * dt;
       this.r += torqueY / P.iz * dt;
       this.r *= 1 - Math.min(0.5, dt * (spd < 5 ? 3 - 2.85 * dn : 0.12));
+
+      // Kleber-Modus (Rollator): fährt wie auf Schienen – Gierrate folgt der Lenkung, die Hinterachse rutscht nie seitlich,
+      // nur die Querbeschleunigung ist begrenzt (glueG); bei zu viel Lenkeinschlag fährt er einfach den engsten möglichen Bogen
+      if (P.glue && Math.abs(u) > 0.5) {
+        const rMax = P.glueG * G / Math.abs(u);
+        const rKin = Math.max(-rMax, Math.min(rMax, u * Math.tan(d) / L));
+        const k = Math.min(1, dt * 40);
+        this.r += (rKin - this.r) * k;
+        w += (-P.b * this.r - w) * k;
+      }
 
       // Drift-Stabilisator (weiche Winkelgrenze, Arcade-Feeling)
       if (spd > 4 && u > 0) {
