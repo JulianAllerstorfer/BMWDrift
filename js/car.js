@@ -798,6 +798,17 @@
     const t = new T.CanvasTexture(c); t.anisotropy = 4; return t;
   }
   let GLARE_TEX = null;
+  // Nabendeckel Koenigsegg: dunkle Scheibe mit silbernem Wappenschild
+  let SHIELD_CAP_TEX = null;
+  function shieldTexture() {
+    const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+    g.fillStyle = '#15171b'; g.beginPath(); g.arc(64, 64, 64, 0, 7); g.fill();
+    const sh = (k) => { g.beginPath(); g.moveTo(64 - 30 * k, 64 - 34 * k); g.lineTo(64 + 30 * k, 64 - 34 * k); g.lineTo(64 + 28 * k, 64 + 4 * k); g.quadraticCurveTo(64 + 22 * k, 64 + 26 * k, 64, 64 + 38 * k); g.quadraticCurveTo(64 - 22 * k, 64 + 26 * k, 64 - 28 * k, 64 + 4 * k); g.closePath(); };
+    sh(1); g.fillStyle = '#c9ced4'; g.fill();
+    sh(0.8); g.fillStyle = '#1d2a4a'; g.fill();
+    g.fillStyle = '#e8c547'; for (let i = 0; i < 4; i++) { g.fillRect(48 + i * 9, 40, 4, 34); }
+    return new T.CanvasTexture(c);
+  }
   function glareTexture() {
     const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
     const gr = g.createRadialGradient(64, 64, 2, 64, 64, 64);
@@ -1029,7 +1040,8 @@
     if (!ROUNDEL_TEX) ROUNDEL_TEX = roundelTexture();
     if (opt.brand === 'ford' && !OVAL_CAP_TEX) OVAL_CAP_TEX = ovalTexture(true);
     if (opt.brand === 'vw' && !VW_CAP_TEX) VW_CAP_TEX = vwTexture('#1f3f7a');
-    const capMat = new T.MeshBasicMaterial({ map: opt.brand === 'ford' ? OVAL_CAP_TEX : opt.brand === 'vw' ? VW_CAP_TEX : ROUNDEL_TEX });
+    if (opt.brand === 'koenigsegg' && !SHIELD_CAP_TEX) SHIELD_CAP_TEX = shieldTexture();
+    const capMat = new T.MeshBasicMaterial({ map: opt.brand === 'ford' ? OVAL_CAP_TEX : opt.brand === 'vw' ? VW_CAP_TEX : opt.brand === 'koenigsegg' ? SHIELD_CAP_TEX : ROUNDEL_TEX });
     const cap = new T.Mesh(new T.CircleGeometry(0.028, 24), capMat);
     cap.position.z = 0.012; spokes.add(cap);
     // Spiegeln für linke Seite erfolgt über das Gelenk
@@ -1385,8 +1397,23 @@
         if (RL.lift > 0.04) { const ms = new T.Mesh(new T.BoxGeometry(0.06, 0.05, 0.03), mats.trim); ms.position.copy(pts[15]).add(new T.Vector3(0, -0.025, 0)); bodyG.add(ms); }
       }
     }
+    // Haifischflossen auf dem Motordeckel (Koenigsegg Jesko Absolut statt Heckflügel)
+    if (SP.fins) {
+      const Fn = SP.fins;
+      for (const sd of [1, -1]) {
+        const fs = new T.Shape(), n = 10;
+        fs.moveTo(Fn.x0, yRoof(Fn.x0) - 0.03);
+        for (let i = 1; i <= n; i++) { const x = Fn.x0 + (Fn.x1 - Fn.x0) * i / n; fs.lineTo(x, yRoof(x) - 0.03); }
+        fs.lineTo(Fn.x1 - 0.02, yRoof(Fn.x1) + Fn.h);
+        fs.quadraticCurveTo(Fn.x1 + (Fn.x0 - Fn.x1) * 0.35, yRoof(Fn.x1) + Fn.h * 0.75, Fn.x0, yRoof(Fn.x0) + 0.01);
+        fs.closePath();
+        const fg = new T.ExtrudeGeometry(fs, { depth: 0.014, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.006, bevelSegments: 2, curveSegments: 10 });
+        fg.translate(0, 0, -0.007);
+        const fin = new T.Mesh(fg, paint); fin.position.z = sd * Fn.z; fin.castShadow = true; bodyG.add(fin, outline(fin, 0.004));
+      }
+    }
     // Antenne
-    {
+    if (SP.antenna) {
       const ax = SP.antenna.x, y = roofY(ax, 0);
       if (SP.antenna.type === 'fin') {
         const fs = new T.Shape(); fs.moveTo(0.1, 0); fs.quadraticCurveTo(-0.02, 0.005, -0.09, 0.06); fs.lineTo(-0.1, 0); fs.closePath();
@@ -1732,7 +1759,7 @@
         o = o || {};
         if (o.spoiler != null) {
           const sp = o.spoiler;
-          roofSpoiler.visible = sp !== 2 && sp !== 3; bigRoof.visible = sp === 3;
+          roofSpoiler.visible = !SP.noRoofSpoiler && sp !== 2 && sp !== 3; bigRoof.visible = sp === 3;
           gtWing.visible = sp === 1; swan.visible = sp === 4; ta.visible = sp === 5; duck.visible = sp === 6;
         }
         if (o.finish != null) {

@@ -197,6 +197,71 @@
     exhaust: { type: 'round', tips: [[-0.64, 0.275, 0.042], [0.64, 0.275, 0.042]] }
   };
 
+  // ------------------------------------------------------------------ Koenigsegg Jesko Absolut
+  // Mittelmotor-Hypercar (2021+): Länge 4610 mm, Breite 2030 mm, Höhe 1210 mm, Radstand 2700 mm, Spur 1705/1659 mm.
+  // Flache, spitze Nase mit großem Mittel-Einlass, schmale Scheinwerfer oben auf den Kotflügeln, tropfenförmige Kanzel
+  // weit vorn, Fenster-Kuppel, langer Motordeckel, zwei Haifischflossen statt Flügel, breiter Diffusor, Endrohr mittig.
+  M.jesko = {
+    id: 'jesko', brand: 'koenigsegg', logo: 'Jesko Absolut', logoSub: 'Koenigsegg', name: 'Jesko Absolut', sub: 'Koenigsegg · Hypercar · 2021+', engine: '5,0-l-V8-Biturbo',
+    XF: 2.33, XR: -2.28, AXF: 1.35, AXR: -1.35, wheelR: 0.355, archR: 0.405, archCY: 0.36,
+    GH_F: 0.98, GH_R: -1.70, trackHalf: 0.84, faceF: 1.9, faceR: -1.95,
+    halfW: [[-2.28, 0.80], [-2.27, 0.90], [-2.24, 0.96], [-2.1, 1.0], [-1.6, 1.015], [-1.35, 1.015], [-0.9, 0.99], [-0.3, 0.955], [0.3, 0.95], [0.9, 0.97], [1.35, 0.99], [1.7, 0.975], [1.95, 0.94], [2.12, 0.88], [2.25, 0.78], [2.33, 0.62]],
+    yBot: [[-2.28, 0.34], [-2.27, 0.26], [-2.22, 0.18], [-2.0, 0.13], [0, 0.11], [1.9, 0.11], [2.15, 0.11], [2.27, 0.115], [2.33, 0.14]],
+    yShoulder: [[-2.28, 0.62], [-2.24, 0.74], [-2.1, 0.80], [-1.35, 0.82], [-0.8, 0.74], [-0.2, 0.66], [0.4, 0.64], [1.0, 0.66], [1.35, 0.68], [1.8, 0.62], [2.1, 0.52], [2.25, 0.42], [2.33, 0.32]],
+    yDeck: [[-2.28, 0.80], [-2.27, 0.87], [-2.24, 0.91], [-2.15, 0.93], [-1.9, 0.955], [-1.70, 0.975], [-1.2, 0.93], [-0.6, 0.86], [0.2, 0.82], [0.7, 0.80], [0.98, 0.80], [1.2, 0.78], [1.5, 0.74], [1.8, 0.68], [2.05, 0.60], [2.2, 0.53], [2.29, 0.45], [2.33, 0.36]],
+    // Kanzel: steile, weit vorn stehende Scheibe, Dach bei 1,21 m, fließt in den Motordeckel
+    roofLine: [[-1.70, 0.975], [-1.45, 1.02], [-1.1, 1.09], [-0.7, 1.16], [-0.35, 1.20], [-0.05, 1.21], [0.25, 1.195], [0.5, 1.13], [0.72, 1.03], [0.88, 0.93], [0.98, 0.85]],
+    roofHW: [[-1.70, 0.70], [-1.3, 0.64], [-0.8, 0.58], [-0.3, 0.55], [0.1, 0.55], [0.5, 0.60], [0.98, 0.70]],
+    win: {
+      chrome: null,
+      dlo: [[-0.95, 0.0], [0.80, 0.0], [0.40, 0.95], [-0.35, 0.95], [-0.70, 0.55]],
+      glass: [
+        [[-0.88, 0.07], [0.72, 0.07], [0.36, 0.88], [-0.32, 0.88], [-0.64, 0.52]]
+      ],
+      ws: [0.12, 0.93, 0.16, 0.88], rw: [0, 0, 0, 0], rwInset: 0.10
+    },
+    gaps: {
+      lines: [[[0.86, 0.20], [0.86, 0.60], [0.80, 0.82]], [[-0.95, 0.20], [-0.95, 0.80]], [[1.85, 0.45], [2.05, 0.52], [2.3, 0.40]], [[-1.95, 0.45], [-2.1, 0.55], [-2.28, 0.58]]],
+      rearDoor: null, doorFront: 0.86, doorBottom: 0.20, hood: [1.0, 2.2]
+    },
+    molding: null, charLine: [1.85, -2.2], swage: [[0.9, 0.36], [-0.9, 0.46]], hoodV: [1.1, 2.15, 0.34, 0.16],
+    kidney: null, shoulderR: 0.03,
+    // schmale, in die Kotflügel gezogene LED-Scheinwerfer mit Lichtband
+    head: { dark: true, bowl: 0.55, drlW: 0.0055,
+      poly: [[0.50, 0.505], [0.62, 0.49], [0.76, 0.492], [0.86, 0.51], [0.92, 0.545], [0.90, 0.565], [0.80, 0.56], [0.66, 0.545], [0.54, 0.53]],
+      lenses: [[0.67, 0.522, 0.018], [0.78, 0.528, 0.018]], rings: false,
+      drl: [[[0.52, 0.522], [0.64, 0.537], [0.78, 0.547], [0.89, 0.552]]], ind: null, indA: null },
+    // großer Mittel-Einlass mit Wabengitter, seitliche Kühlöffnungen, Carbon-Splitter
+    grille: { poly: [[0.0, 0.36], [0.40, 0.36], [0.56, 0.31], [0.60, 0.22], [0.52, 0.15], [0.0, 0.15]], frame: 0.012, frameMat: 'trim', bars: 0, mesh: 'hex', cell: 0.03 },
+    intake: { centerPoly: [[-0.02, 0.15], [0.02, 0.15], [0.02, 0.151], [-0.02, 0.151]], bars: [], pocketPoly: [[0.64, 0.41], [0.80, 0.45], [0.84, 0.40], [0.82, 0.22], [0.68, 0.18], [0.61, 0.30]], fog: null, pocketBar: 0.32 },
+    frontDecals: [{ p: [[-0.9, 0.125], [0.9, 0.125], [0.92, 0.14], [-0.92, 0.14]], mat: 'carbon', off: 0.006, both: false }],
+    sideDecals: [
+      { p: [[0.90, 0.24], [0.99, 0.24], [1.06, 0.52], [0.96, 0.52]], mat: 'dark', off: 0.003 },              // Luftauslass hinter dem Vorderrad
+      { p: [[-0.98, 0.42], [-1.28, 0.52], [-1.32, 0.70], [-1.0, 0.66]], mat: 'dark', off: 0.003 },           // Seitenkasten-Einlass vor dem Hinterrad
+      { p: [[-1.6, 0.13], [1.6, 0.13], [1.6, 0.16], [-1.6, 0.16]], mat: 'carbon', off: 0.004 }              // Carbon-Schweller
+    ],
+    plateF: [0.375, 0.43], tow: [0.2, 0.3], roundelY: null, split: { y: 0.10, w: 0.92, ref: 0.13 },
+    mirror: [0.62, 0.90, 0.93], handles: [], handleY: 0.6, sideInd: null,
+    rails: null, antenna: null,
+    roofSpoiler: -1.66, spoilerFlush: true, spoilerLen: 0.1, noRoofSpoiler: true, wiper: [0.80, 0.94], rearWiper: null,
+    // Heck: dünne Leuchtbänder, die außen um die Ecke laufen; großer offener Diffusor
+    tail: { poly: [[0.36, 0.80], [0.70, 0.79], [0.90, 0.80], [0.96, 0.84], [0.93, 0.865], [0.70, 0.835], [0.36, 0.83]], dark: true, split: null, lineW: 0.012,
+      inner: [], lines: [[[0.38, 0.815], [0.70, 0.808], [0.90, 0.818], [0.945, 0.845]]],
+      rev: null,
+      side: [[-2.27, 0.80], [-2.2, 0.81], [-2.12, 0.83], [-2.2, 0.845], [-2.27, 0.85]],
+      sideLines: [] },
+    tailgate: { half: 0.62, y0: 0.56, y1: 0.93 }, plateR: [0.58, 0.69], roundelR: null, chromeBar: null,
+    badges: [{ t: 'KOENIGSEGG', z: 0, y: 0.755, font: 'bold 44px Arial', w: 0.42 }],
+    diffuser: [[-0.95, 0.12], [0.95, 0.12], [0.86, 0.50], [-0.86, 0.50]], reflectors: null,
+    rearDecals: [
+      { p: [[0.36, 0.52], [0.9, 0.53], [0.92, 0.74], [0.4, 0.72]], mat: 'dark', off: 0.003 },               // offene Heckgitter links/rechts
+      { p: [[0.30, 0.16], [0.30, 0.50]], line: 0.012, mat: 'carbon', off: 0.005 },                         // Diffusor-Finnen
+      { p: [[0.62, 0.16], [0.62, 0.50]], line: 0.012, mat: 'carbon', off: 0.005 }
+    ],
+    exhaust: { type: 'trap', tips: [[0, 0.40, 0.22, 0.09]] },
+    fins: { x0: -1.25, x1: -2.25, z: 0.42, h: 0.30 }
+  };
+
   // ------------------------------------------------------------------ F21
   // 1er Dreitürer LCI als M140i: große Nieren mit grauem Rahmen (Ferricgrau), spitz zulaufende Scheinwerfer,
   // M-Stoßstange mit drei großen Einlässen, graue Spiegelkappen, schmale zweiteilige Rückleuchten,
@@ -447,5 +512,5 @@
   M.zipfer = { id: 'zipfer', logo: 'Zipfer', name: 'Zipfer Märzen', sub: 'Fahrende Bierflasche · bis ca. 130 km/h', engine: 'Märzen-Reihensechser', badges: [] };
 
   window.CAR_MODELS = M;
-  window.CAR_ORDER = ['e46', 'f21', 'f31', 'g31', 'fusion', 'focus', 'polo', 'tractor', 'moped', 'zipfer', 'wheelchair', 'rollator'];
+  window.CAR_ORDER = ['e46', 'f21', 'f31', 'g31', 'jesko', 'fusion', 'focus', 'polo', 'tractor', 'moped', 'zipfer', 'wheelchair', 'rollator'];
 })();

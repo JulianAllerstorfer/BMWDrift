@@ -188,8 +188,13 @@ registerProcessor('engine-proc', EngineProc);`;
     // 520d – B47-Vierzylinder-Diesel: brummiger, mehr Nageln, hellerer Turbo, weniger Bass als der Sechser
     g31d4: { cyl: 4, pipe: 0.0142, refl: 0.56, header: 0.0035, hrefl: 0.3, noise: 0.34, intake: 0.1, damp: 0.64, rasp: 0.18, gain: 0.31, tick: 0.62, muffle: 580,
       camp: [1.0, 0.86, 0.96, 0.84], coff: [0, 0.009, -0.006, 0.011], crackle: 0,
-      whistle: { base: 1050, k: 2400, vol: 0.05, type: 'triangle' }, bov: null, vol: 1.0 }
+      whistle: { base: 1050, k: 2400, vol: 0.05, type: 'triangle' }, bov: null, vol: 1.0 },
+    // Koenigsegg Jesko – V8-Biturbo mit flacher Kurbelwelle: hell, kreischend, rau, Turbo-Zischen, Abblasventil
+    jesko: { cyl: 8, pipe: 0.0082, refl: 0.66, header: 0.0019, hrefl: 0.42, noise: 0.17, intake: 0.55, damp: 0.34, rasp: 0.52, gain: 0.3, tick: 0, muffle: 2000,
+      camp: [1.0, 0.82, 0.97, 0.8, 1.04, 0.86, 0.95, 0.84], coff: [0, 0.006, -0.004, 0.008, -0.003, 0.005, -0.002, 0.007], crackle: 0.22,
+      whistle: { base: 1500, k: 3900, vol: 0.055, type: 'sine' }, bov: { vol: 0.65, f1: 1700, f2: 4200 }, vol: 1.25 }
   };
+  ENGINE_CFG.jeskop = ENGINE_CFG.jesko;   // Super-98-Variante klingt gleich
 
   // Hupen je Fahrzeug: Grundtöne (Hz), Formant-Filter, Lautstärke
   const HORNS = {

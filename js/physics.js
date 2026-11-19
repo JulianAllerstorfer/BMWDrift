@@ -15,6 +15,8 @@
   const CURVES = {
     na6: [[600, 0.5], [1000, 0.5], [3000, 0.86], [4600, 1], [6200, 0.904], [7300, 0.72], [8200, 0.55]],
     turbo: [[600, 0.42], [1300, 0.85], [1600, 1], [4500, 1], [5500, 0.92], [6500, 0.78], [7300, 0.62]],
+    // Koenigsegg 5,0-l-V8-Biturbo (flache Kurbelwelle): breites Plateau, dreht bis 8500/min
+    v8tt: [[800, 0.32], [1800, 0.62], [2700, 0.86], [3500, 0.97], [4000, 1], [5100, 1], [6500, 0.97], [7800, 0.9], [8500, 0.82], [9000, 0.5]],
     diesel: [[500, 0.38], [1200, 0.75], [1750, 1], [2600, 1], [3500, 0.85], [4400, 0.62], [5300, 0.42]],
     electric: [[500, 1], [4000, 1], [5000, 0.97], [6500, 0.8], [8000, 0.64], [9000, 0.55], [9600, 0.3]],
     tractor: [[500, 0.62], [900, 0.9], [1300, 1], [1700, 0.98], [2100, 0.88], [2400, 0.72], [2700, 0.5]],
@@ -60,6 +62,9 @@
     // VW Polo 6R (2013) 1.2 TSI: 105 PS / 175 Nm, 1090 kg, Radstand 2,47 m, 6-Gang
     polo: { mass: 1090, a: 0.99, b: 1.48, wheelR: 0.30, trackW: 1.46, curve: 'tsi', maxTorque: 175, idle: 750, redline: 6200,
       gears: [0, 3.77, 2.09, 1.47, 1.10, 0.89, 0.73], final: 3.62, drag: 0.37, rollRes: 11, cgH: 0.54 },
+    // Jesko Absolut: 1390 kg, Mittelmotor (45/55), 9-Gang-LST, sehr wenig Luftwiderstand
+    jesko: { mass: 1390, a: 1.485, b: 1.215, wheelR: 0.36, trackW: 1.68, curve: 'v8tt', maxTorque: 1600, idle: 950, redline: 8500,
+      gears: [0, 3.0, 2.25, 1.78, 1.45, 1.21, 1.03, 0.89, 0.78, 0.69], final: 3.1, drag: 0.21, cgH: 0.38, muRMul: 1.5 },   // breite Hinterreifen + Abtrieb: viel mehr Grip hinten
     g31: { mass: 1840, a: 1.49, b: 1.485, wheelR: 0.335, trackW: 1.60, curve: 'diesel', maxTorque: 620, idle: 750, redline: 5000, gears: [0, 4.0, 2.5, 1.68, 1.28, 1.0, 0.80], final: 3.15, drag: 0.40, diesel: true }
   };
   // Motorvarianten je Auto (Index 0 = Serie). Werte überschreiben die Grunddaten oben.
@@ -74,6 +79,10 @@
       { key: 'f31', badge: '340i', name: '340i', code: 'B58 Reihensechser-Turbo' },
       { key: 'f31d', badge: '330d', name: '330d', code: 'N57 Reihensechser-Diesel', diesel: true,
         curve: 'diesel', maxTorque: 640, idle: 750, redline: 5000, final: 2.81, massAdd: 40 }
+    ],
+    jesko: [
+      { key: 'jesko', badge: '', name: 'E85', code: '5,0-l-V8-Biturbo · Bioethanol' },
+      { key: 'jeskop', badge: '', name: 'Super 98', code: '5,0-l-V8-Biturbo · Benzin', maxTorque: 1280 }
     ],
     g31: [
       { key: 'g31', badge: '530d', name: '530d', code: 'B57 Reihensechser-Diesel', diesel: true },
