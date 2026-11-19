@@ -9,6 +9,8 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}   # steht nur in ~/bmwdrift/.env auf dem Server
     ports:
       - "8046:8046"   # im LAN / Tailscale direkt erreichbar
+    volumes:
+      - bmwdrift-data:/app/data   # geprüfte Rekorde (records.json) überleben Neustarts und Deploys
 
   ngrok:
     image: ngrok/ngrok:latest
@@ -19,3 +21,6 @@ services:
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:?NGROK_AUTHTOKEN fehlt (siehe ~/bmwdrift/.env auf dem Server)}
     command: http --url=${NGROK_DOMAIN:-pacifist-romp-concrete.ngrok-free.dev} bmwdrift:8046
+
+volumes:
+  bmwdrift-data:

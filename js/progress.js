@@ -151,9 +151,17 @@
     return out;
   }
   const fmt = (n) => Math.round(n).toLocaleString('de-DE');
+  // Vom Admin freigeschaltet (Nachricht 'maxprog' vom Server)
+  function maxAll() {
+    let xp = 0; for (let L = 1; L < MAX_LVL; L++) xp += xpStep(L);
+    st.xp = Math.max(st.xp || 0, xp); st.money = Math.max(st.money || 0, 99999999);
+    for (const id in (window.CAR_MODELS || {})) { const c = { tires: Object.keys(TIRES).map(Number) }; for (const k of PART_ORDER) c[k] = PARTS[k].stages; st.cars[id] = c; }
+    st.paints = ((window.E46 && E46.PAINTS) || []).map((_, i) => i); st.finishes = FINISH.map((_, i) => i); st.camo = true;
+    save();
+  }
 
   window.Prog = {
-    PARTS, PART_ORDER, TIRES, FINISH, hasFinish, buyFinish, CAMO, hasCamo, buyCamo, st, level, levelInfo: () => levelInfo(st.xp), xpStep, carFactor,
+    PARTS, PART_ORDER, TIRES, FINISH, hasFinish, buyFinish, CAMO, hasCamo, buyCamo, maxAll, level, levelInfo: () => levelInfo(st.xp), xpStep, carFactor,
     partPrice, partLevel, tirePrice, paintPrice, paintLevel, stage, hasTire, hasPaint,
     buyPart, buyTire, buyPaint, limits, clampCfg, addDrift, addMoney, money: () => st.money
   };

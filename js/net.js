@@ -74,6 +74,14 @@
     changed();
   }
   function changed() { if (Net.onChange) Net.onChange(); }
+  // Geräte-Kennung: unter dieser ID speichert der Server deine geprüften Rekorde
+  const UID = (() => {
+    try {
+      let u = localStorage.getItem('e46drift.uid');
+      if (!/^[a-f0-9]{32}$/.test(u || '')) { u = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem('e46drift.uid', u); }
+      return u;
+    } catch (e) { return null; }
+  })();
   function send(obj) { if (Net._ws && Net._ws.readyState === 1) Net._ws.send(JSON.stringify(obj)); }
 
   Net.init = function (ctx) { Net._ctx = ctx; };
@@ -85,7 +93,7 @@
     try { ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host); } catch (e) { Net.status = 'Keine Verbindung'; changed(); return; }
     Net._ws = ws;
     Net.status = 'Verbinde …'; changed();
-    ws.onopen = () => send({ t: 'hello', name, cfg, best: Math.round(Net.myBest || 0), bestCar: Net.myBestCar || null });
+    ws.onopen = () => send({ t: 'hello', uid: UID, name, cfg, best: Math.round(Net.myBest || 0), bestCar: Net.myBestCar || null });
     ws.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } handle(m); };
     ws.onclose = onClose;
   };
@@ -104,18 +112,14 @@
         Net.connected = true; Net.myId = m.id; Net.slot = m.slot; Net.urls = m.urls || []; Net.max = m.max;
         Net.status = 'Verbunden'; Net._retry = 0;
         for (const p of m.players) addRemote(p);
+        if (m.rec && Net.onRec) Net.onRec(m.rec, false);
         if (Net.onChat) for (const c of m.chat || []) Net.onChat(Object.assign({ old: true }, c));
         changed(); break;
       case 'full': Net.status = 'Server voll (max. ' + m.max + ' Spieler)'; Net._full = true; changed(); break;
       case 'kicked': Net.status = 'Du wurdest vom Host entfernt'; Net._full = true; changed(); if (Net.onEvent) Net.onEvent('Vom Host gekickt'); break;
       case 'banned': Net.status = 'Du bist auf diesem Server gesperrt'; Net._full = true; changed(); if (Net.onEvent) Net.onEvent('Vom Host gesperrt'); break;
       case 'maxprog': if (window.Prog) {
-        const P = window.Prog, s = P.st; let xp = 0;
-        for (let L = 1; L < 50; L++) xp += P.xpStep(L);
-        s.xp = Math.max(s.xp || 0, xp); s.money = Math.max(s.money || 0, 99999999);
-        for (const id in (window.CAR_MODELS || {})) { const c = { tires: Object.keys(P.TIRES).map(Number) }; for (const k of P.PART_ORDER) c[k] = P.PARTS[k].stages; s.cars[id] = c; }
-        s.paints = ((window.E46 && E46.PAINTS) || []).map((_, i) => i); s.finishes = P.FINISH.map((_, i) => i); s.camo = true;
-        try { localStorage.setItem('e46drift.prog', JSON.stringify(s)); } catch (e) { /* */ }
+        window.Prog.maxAll();
         send({ t: 'maxok' });
         if (Net.onEvent) Net.onEvent('Host hat dir alles freigeschaltet');
         setTimeout(() => location.reload(), 1200);
@@ -157,8 +161,9 @@
         r.name = m.name; r.sprite.material.map = tagTexture(m.name, SLOT_COLORS[r.slot % SLOT_COLORS.length]); r.sprite.material.needsUpdate = true; changed(); break;
       }
       case 'chat': if (Net.onChat) Net.onChat(m); break;
-      case 'score': { const q = pending.get(m.id); if (q) { q.total = m.total; if (m.best != null) q.best = Math.max(q.best || 0, m.best); if (m.bestCar) q.bestCar = m.bestCar; }
-        const r = Net.remotes.get(m.id); if (r) { r.total = m.total; if (m.best != null) r.best = Math.max(r.best || 0, m.best); if (m.bestCar) r.bestCar = m.bestCar; changed(); } break; }
+      case 'rec': if (m.rec && Net.onRec) Net.onRec(m.rec, !!m.reset); break;   // Server korrigiert deine Rekorde
+      case 'score': { const q = pending.get(m.id); if (q) { q.total = m.total; if (m.best != null) { q.best = m.best; q.bestCar = m.bestCar || null; } }
+        const r = Net.remotes.get(m.id); if (r) { r.total = m.total; if (m.best != null) { r.best = m.best; r.bestCar = m.bestCar || null; } changed(); } break; }
     }
   }
   Net._handle = handle;

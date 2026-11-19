@@ -69,6 +69,22 @@
     Net.onChange = refreshMP;
     Net.onEvent = (txt) => { if (mode === 'drive') popup(txt, '', false); chatAdd({ kind: 'sys', text: txt }); refreshMP(); };
     Net.onChat = chatAdd;
+    // Rekorde gelten nur so, wie der Server sie geprüft hat – im Browser geänderte Werte werden überschrieben
+    Net.onRec = (r, reset) => {
+      rec.best = Math.max(0, +r.best || 0);
+      if (r.bestCar) rec.bestModel = r.bestCar; else delete rec.bestModel;
+      cfg.bestCar = r.bestCar || null;
+      const sc = r.chal || {}; rec.chal = rec.chal || {};
+      for (const k of Object.keys(rec.chal)) if (!sc[k]) delete rec.chal[k];
+      for (const k in sc) { const o = rec.chal[k]; rec.chal[k] = { pts: sc[k].pts, time: o ? o.time : 0, model: sc[k].car || (o && o.model) || cfg.model }; }
+      cfg.chalRec = {}; cfg.chalRecCar = {};
+      for (const k in sc) { cfg.chalRec[k] = sc[k].pts; if (sc[k].car) cfg.chalRecCar[k] = sc[k].car; }
+      Net.myBest = rec.best; Net.myBestCar = rec.bestModel || null;
+      store('e46drift.rec', rec); save();
+      $('best').textContent = fmt(rec.best); $('bestCar').textContent = rec.best && rec.bestModel ? carName(rec.bestModel) : '';
+      if (reset) chatAdd({ kind: 'sys', text: 'Deine Rekorde wurden vom Host zurückgesetzt.' });
+      refreshMP();
+    };
     $('chatInput').addEventListener('keydown', (e) => {
       e.stopPropagation();
       if (e.key === 'Enter') { e.preventDefault(); sendChat(); }

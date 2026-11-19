@@ -44,6 +44,10 @@
     <div id="players"></div>
   </div>
   <div class="card">
+    <div class="ctitle">REKORDE <small style="margin-left:10px">vom Server geprüft</small></div>
+    <div id="records"></div>
+  </div>
+  <div class="card">
     <div class="ctitle">GESPERRT</div>
     <div id="banned"></div>
   </div>
@@ -77,7 +81,8 @@
       <div class="row">
         <i class="dot" style="background:${COLORS[p.slot % COLORS.length]}"></i>
         <div class="grow"><div class="name">${esc(p.name)}${p.host ? '<span class="tag">DU / HOST</span>' : ''}${p.maxPending ? '<span class="tag">MAX WARTET – SEITE NEU LADEN</span>' : ''}</div>
-          <div class="meta">${esc(p.ip)} · seit ${ago(p.since)} · ${Number(p.total).toLocaleString('de-DE')} Punkte</div></div>
+          <div class="meta">${esc(p.ip)} · seit ${ago(p.since)} · ${Number(p.total).toLocaleString('de-DE')} Punkte · Rekord ${Number(p.best || 0).toLocaleString('de-DE')}</div></div>
+        <button class="kick" data-act="resetrec" data-id="${p.id}" data-name="${esc(p.name)}">REKORD RESET</button>
         <button class="max" data-act="max" data-id="${p.id}" data-name="${esc(p.name)}">ALLES MAX</button>
         <button class="kick" data-act="kick" data-id="${p.id}" data-name="${esc(p.name)}" ${p.host ? 'disabled' : ''}>KICKEN</button>
         <button class="ban" data-act="ban" data-id="${p.id}" data-name="${esc(p.name)}" ${p.host ? 'disabled' : ''}>SPERREN</button>
@@ -85,6 +90,10 @@
     $('banned').innerHTML = st.banned.length ? st.banned.map(b => `
       <div class="row"><div class="grow"><div class="name">${esc(b.name)}</div><div class="meta">${esc(b.ip)}</div></div>
         <button class="unban" data-act="unban" data-ip="${esc(b.ip)}">ENTSPERREN</button></div>`).join('') : '<div class="empty">Niemand gesperrt.</div>';
+    $('records').innerHTML = (st.records || []).length ? st.records.map(r => `
+      <div class="row"><div class="grow"><div class="name">${esc(r.name || '?')}</div>
+        <div class="meta">Bester Drift ${Number(r.best).toLocaleString('de-DE')} · Challenge ${Number(r.chal).toLocaleString('de-DE')}${r.seen ? ' · zuletzt vor ' + ago(r.seen) : ''}</div></div>
+        <button class="kick" data-act="resetrec" data-uid="${esc(r.uid)}" data-name="${esc(r.name || '?')}">RESET</button></div>`).join('') : '<div class="empty">Noch keine Rekorde.</div>';
     $('urls').innerHTML = st.urls.map(esc).join('<br>') || '—';
   }
 
@@ -98,10 +107,12 @@
     const act = b.dataset.act;
     if (act === 'maxall' && !confirm('Alle Spieler auf Max setzen? Das Spiel lädt bei allen kurz neu.')) return;
     if (act === 'max' && !confirm(b.dataset.name + ' alles auf Max setzen? Level 50, Geld, alle Teile, Reifen, Lacke. Das Spiel lädt bei ihm kurz neu.')) return;
+    if (act === 'resetrec' && !confirm('Rekorde von ' + b.dataset.name + ' zurücksetzen? Bester Drift und Challenge-Rekorde gehen auf 0.')) return;
     if (act === 'ban' && !confirm(b.dataset.name + ' sperren? Das Gerät kann bis zum Server-Neustart nicht mehr beitreten.')) return;
     b.disabled = true;
     try {
       if (act === 'maxall') { const r = await api('maxall', {}); toast(r.n + ' Spieler auf Max gesetzt'); }
+      else if (act === 'resetrec') { await api('resetrec', b.dataset.uid ? { uid: b.dataset.uid } : { id: b.dataset.id }); toast('Rekorde von ' + b.dataset.name + ' zurückgesetzt'); }
       else if (act === 'unban') { await api('unban', { ip: b.dataset.ip }); toast('Sperre aufgehoben'); }
       else { await api(act, { id: b.dataset.id }); toast(b.dataset.name + (act === 'ban' ? ' gesperrt' : act === 'max' ? ' ist jetzt auf Max' : ' gekickt')); }
     } catch (err) { toast('Fehler: ' + err.message); }
