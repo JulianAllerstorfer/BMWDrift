@@ -8,12 +8,15 @@ Driftspiel im Cartoon-Look mit vier BMWs:
 | **F21 1er** M140i (3-Türer) | B58 Reihensechser-Turbo | 363 PS |
 | **F31 Touring** 340i | B58 Reihensechser-Turbo | 341 PS |
 | **G31 Touring** 530d | B57 Reihensechser-**Diesel**, mit Rußwolken aus dem Auspuff | 263 PS, 620 Nm |
+| **E60 M5** Limousine | S85 **V10**-Sauger, 5,0 l, dreht bis 8250/min, SMG mit 7 Gängen | 507 PS, 520 Nm |
 
 **Woran man die BMWs erkennt:**
 - E46 Touring (Facelift): breite Nieren mit Chromrahmen in der Haube, Klarglas-Scheinwerfer mit zwei Chromreflektoren und großem Blinker außen, schwarze Stoßleisten mit Kennzeichenträger, zweiteilige Rückleuchten (außen hoch und abfallend mit klarem Blinkerfeld, innen in der Heckklappe mit klarem Rückfahrlicht), Griffleiste über dem Kennzeichen.
 - F21 1er (M140i): große Nieren mit grauem Rahmen, spitze Scheinwerfer, M-Stoßstange mit drei Einlässen, graue Spiegelkappen, Kennzeichen hinten in der Stoßstange, je ein Endrohr links und rechts.
 - F31 Touring: Scheinwerfer laufen direkt in die Nieren, sechseckige LED-Ringe, L-förmige Rückleuchten bis in die Heckklappe.
 - G31 Touring: sehr breite Nieren mit Chromstäben, Air Breather hinter dem Vorderrad, flache breite Rückleuchten, trapezförmige Endrohre.
+- E60 M5 (LCI, 2007–2010): echte Maße (4,86 × 1,85 × 1,47 m, Radstand 2,889 m). Doppelscheinwerfer mit **zwei Angel Eyes** je Seite und der Lidstrich-Leiste („Eyebrow“) mit Blinker oben drauf, schmale hohe Nieren mit schwarzen Stäben, M-Schürze mit drei großen Einlässen, M-Kiemen hinter dem Vorderrad, kurzes hohes Bangle-Heck mit Abrisskante, keilförmige **LED-Rückleuchten** (LCI) vom Kotflügel in den Kofferraumdeckel mit den waagrechten Leuchtbändern, Diffusor mit **vier Endrohren**.
+  Sound: eigene V10-Simulation mit 10 Zylindern (Zündfrequenz bis ca. 690 Hz) – kehliges Leerlaufgrollen, oben raus das typische helle Kreischen bis 8250/min, lautes Ansaugheulen der Einzeldrosselklappen, kein Turbo.
 
 **Motorwahl** (Garage, Tab AUTO unter „Motor“):
 - E46 Touring: 330i (M54-Sauger) oder **330d mit M57-Diesel**
@@ -57,6 +60,12 @@ Der Reihensechser blubbert tief und knallt gern im Schub. Beim Gasgeben spritzt 
 | **Hakone Lane** | 0,8 km | kompakter Drift-Kurs, Werkstatt im Infield |
 | **Großer Ring** | 2,0 km | 22 Kurven: S-Kurven, schnelle Bögen und enge Ecken, Werkstatt **und Tankstelle** im Infield |
 | **Die Gerade** | 10,75 km | 5 km schnurgerade für Vollgas, am Ende eine Wendeschleife, parallele Rückfahrt und zurück auf die Gerade; Werkstatt am Anfang der Geraden |
+| **Autobahn** | endlos | zwei Richtungsfahrbahnen mit je 3 Spuren und Standstreifen, Betonleitwand in der Mitte, weite Bögen, **Verkehr** (Autos und LKWs) – du driftest dazwischen durch |
+
+**Autobahn:** Die Straße hört nie auf – egal wie weit du fährst, vor dir wird die Landschaft weitergebaut (Bäume, Lärmschutzwände, Schilderbrücken, Überführungen). Du startest auf dem Standstreifen.
+Auf deiner Seite fährt der Verkehr mit dir: links schnell (ca. 140 km/h), in der Mitte ca. 120, rechts gemütlich mit LKWs (85 km/h). Die Autos halten Abstand, bremsen (Bremslichter), überholen links und weichen dir aus, wenn du stehst. Auf der Gegenfahrbahn kommt dir Verkehr entgegen, nachts mit Scheinwerfern.
+Wer im Drift **knapp an einem Auto vorbeirutscht**, bekommt Bonuspunkte in die Kette: „VORBEI!“ (unter 1,25 m), „KNAPP VORBEI!“ (unter 0,75 m), „HAARSCHARF!“ (unter 0,35 m), an LKWs gibt's das 1,5-Fache, und je schneller, desto mehr. **Ein Unfall mit dem Verkehr beendet die Kette** wie ein Einschlag in die Mauer. Gerammte Autos werden weggeschoben, drehen sich etwas und ordnen sich wieder ein.
+Die Minikarte zeigt auf der Autobahn den Ausschnitt um dich herum (Fahrtrichtung oben) mit allen Autos und LKWs. Taste **Y** bringt dich zurück auf den Standstreifen am Anfang. Zeitrennen gibt es hier nicht (keine Runden), die Punkte-Challenge schon. Den Verkehr sieht jeder Spieler für sich.
 
 Die Strecke wählst du in der Garage im Tab **AUTO** unter „Strecke“.
 
@@ -230,6 +239,7 @@ Fährst du mit dem Heck nah an der Mauer entlang, zählen die Punkte doppelt. Ei
 - `js/models.js` – Maße und Details der vier Autos
 - `js/car.js` – baut die Autos daraus (Karosserie, Fenster, Nieren, Scheinwerfer, Felgen …)
 - `js/track.js` – Strecke „Hakone Lane“ und die Umgebung
+- `js/highway.js` – endlose Autobahn mit Verkehr (Landschaft wird ums Auto nachgebaut)
 - `js/peds.js` – Fußgänger am Zebrastreifen (Großer Ring)
 - `js/copshow.js` – Polizist und Rollenprüfstand für den Polizei-Film
 - `js/ffb.js` – Force Feedback für Logitech-Lenkräder (WebHID)

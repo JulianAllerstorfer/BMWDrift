@@ -1152,6 +1152,7 @@
   const fmtTime = (t) => Math.floor(t / 60) + ':' + (t % 60).toFixed(1).padStart(4, '0');
   const fmtLap = (t) => Math.floor(t / 60) + ':' + (t % 60).toFixed(2).padStart(5, '0').replace('.', ',');
   function startChallenge(kind) {
+    if (kind === 'time' && track.highway) { popup('KEINE RUNDEN', 'Die Autobahn hört nie auf – probier die Punkte-Challenge', true); return; }
     chal.kind = kind === 'time' ? 'time' : 'pts';
     startDrive();
     restartChallenge();
@@ -1389,7 +1390,7 @@
     $('hud').classList.remove('hidden');
     camState.init = false;
     showCam();
-    if (!fromLift) popup('WERKSTATT', 'Fahr raus auf die Strecke!', false);
+    if (!fromLift) { if (track.highway) popup('AUTOBAHN', 'Rein in den Verkehr – knapp vorbeidriften gibt Bonus!', false); else popup('WERKSTATT', 'Fahr raus auf die Strecke!', false); }
   }
   function setPause(p) {
     if (mode !== 'drive' && mode !== 'pause') return;
@@ -1443,7 +1444,7 @@
     cancelChain();
     liftReset();
     camState.init = false;
-    popup('WERKSTATT', '', false);
+    popup(track.highway ? 'STANDSTREIFEN' : 'WERKSTATT', '', false);
   }
   const jonnyFall = { gasPrev: false, hinted: false };
   function resetCar() {
@@ -1507,6 +1508,18 @@
       $('best').textContent = fmt(rec.best); $('bestCar').textContent = rec.bestModel ? carName(rec.bestModel) : '';
     }
     cancelChain();
+  }
+  // Autobahn: knapp am Verkehr vorbei (clear = Abstand in m). Nur im Drift gibt's Bonuspunkte für die Kette.
+  const NEAR_PTS = 350;
+  function nearMiss(list) {
+    for (const e of list) {
+      if (!score.active) continue;
+      const k = e.clear < 0.35 ? 3 : e.clear < 0.75 ? 2 : 1;
+      const pts = Math.round(NEAR_PTS * k * (e.truck ? 1.5 : 1) * score.mult * Math.max(1, phys.speed * 3.6 / 100));
+      score.chain += pts;
+      popup(k === 3 ? 'HAARSCHARF!' : k === 2 ? 'KNAPP VORBEI!' : 'VORBEI!', '+' + fmt(pts) + (e.truck ? ' · LKW' : ''), 'lvl');
+      rumble(0.2, 0.35, 90);
+    }
   }
   function updateScore(dt, hit) {
     const spd = phys.speed;
@@ -1672,6 +1685,11 @@
     y = y || 0;
     const tod = todShot != null ? todShot : Sky.todFor(cfg.tod, Date.now());
     const st = track.setTime(tod);
+    // Autobahn: Landschaft nachbauen, Verkehr fahren lassen, knapp vorbei
+    if (track.update) {
+      const ev = track.update(mode === 'pause' ? 0 : dt, x, z, mode === 'drive' ? phys : null, mode === 'spectate' ? null : phys.h);
+      if (mode === 'drive' && ev && ev.near.length) nearMiss(ev.near);
+    }
     // Schatten & Licht folgen dem Auto bzw. der Kamera
     track.sun.position.set(x + track.sunDir.x * 70, y + track.sunDir.y * 70, z + track.sunDir.z * 70);
     track.sun.target.position.set(x, y, z);
@@ -2332,6 +2350,7 @@
       phys.groundY = track.groundAt ? track.groundAt(phys.x, phys.z, phys.trackIdx) : 0;   // Brücke/Rampe
       phys.grade = track.gradeAt ? track.gradeAt(phys.trackIdx, phys.h) : 0;
       carHit = Math.max(carHit, Net.collide(phys));
+      if (track.collideTraffic) hit = Math.max(hit, track.collideTraffic(phys));   // Autobahn: Unfall mit dem Verkehr
       inp.shiftUp = inp.shiftDown = false;
       acc -= STEP; n++;
     }
@@ -2570,6 +2589,7 @@
   function drawMini(spectating) {
     if (!miniCtx) miniCtx = $('mini').getContext('2d');
     const W = 200, m = track.mini;
+    if (m.local) { drawMiniLocal(spectating); return; }
     if (!miniStatic) {
       let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
       for (const p of m.S) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z); }
@@ -2597,6 +2617,41 @@
     };
     for (const r of Net.remotes.values()) if (r.cur) dot(r.cur.x, r.cur.z, r.cur.h, Net.slotColor(r.slot), spectating && r === spec.target);
     if (!spectating) dot(phys.x, phys.z, phys.h, '#ffd21f', true);
+  }
+
+  // Minikarte Autobahn: Ausschnitt ums Auto (Fahrtrichtung oben), Verkehr als Punkte
+  function drawMiniLocal(spectating) {
+    const g = miniCtx, W = 200, m = track.mini, sc = 0.55;
+    const cx = spectating ? camera.position.x : phys.x, cz = spectating ? camera.position.z : phys.z;
+    const i = track.nearest(cx, cz), p = track.S[i], a = Math.atan2(p.tz, p.tx);     // Straße zeigt nach oben
+    const ca = Math.cos(-a - Math.PI / 2), sa = Math.sin(-a - Math.PI / 2);
+    const P = (x, z) => { const dx = (x - cx) * sc, dz = (z - cz) * sc; return [W / 2 + dx * ca - dz * sa, W * 0.62 + dx * sa + dz * ca]; };
+    g.clearRect(0, 0, W, W);
+    g.save(); g.beginPath(); g.arc(W / 2, W / 2, W / 2 - 2, 0, Math.PI * 2); g.clip();
+    g.fillStyle = 'rgba(70,110,60,0.55)'; g.fillRect(0, 0, W, W);
+    const band = (l0, l1, col) => {
+      g.beginPath();
+      for (let s = -260; s <= 260; s += 20) { const q = m.pose(p.x + s * p.tx, l0), r = P(q.x, q.z); s === -260 ? g.moveTo(r[0], r[1]) : g.lineTo(r[0], r[1]); }
+      for (let s = 260; s >= -260; s -= 20) { const q = m.pose(p.x + s * p.tx, l1), r = P(q.x, q.z); g.lineTo(r[0], r[1]); }
+      g.closePath(); g.fillStyle = col; g.fill();
+    };
+    band(-24.6, 7.9, '#2b2e34'); band(-8.6, -7.9, '#b9bbb8');
+    for (const v of m.traffic) {
+      if (v.wx == null) continue;
+      const r = P(v.wx, v.wz); if (r[1] < -10 || r[1] > W + 10) continue;
+      g.save(); g.translate(r[0], r[1]); g.rotate(-v.h - a);
+      g.fillStyle = v.tpl.truck ? '#f2c21b' : v.dir > 0 ? '#e8ecf2' : '#8a93a3';
+      const L = v.tpl.len * sc, Wd = v.tpl.wid * sc; g.fillRect(-Wd / 2, -L / 2, Wd, L); g.restore();
+    }
+    const dot = (x, z, h, col) => {
+      const r = P(x, z);
+      g.save(); g.translate(r[0], r[1]); g.rotate(-h - a - Math.PI / 2);
+      g.beginPath(); g.moveTo(7, 0); g.lineTo(-5, -4.5); g.lineTo(-5, 4.5); g.closePath();
+      g.fillStyle = col; g.fill(); g.lineWidth = 1.5; g.strokeStyle = '#111318'; g.stroke(); g.restore();
+    };
+    for (const r of Net.remotes.values()) if (r.cur) dot(r.cur.x, r.cur.z, r.cur.h, Net.slotColor(r.slot));
+    if (!spectating) dot(phys.x, phys.z, phys.h, '#ffd21f');
+    g.restore();
   }
 
   // Drehzahlmesser
@@ -2725,7 +2780,7 @@
         }
         if (h.indexOf('lapdone') >= 0 && i === steps - 3 && chal.phase === 'run') chal.progress = chal.goal;
         if (h.indexOf('probe') >= 0) window.__maxSd = Math.max(window.__maxSd || -9, track.sd(phys.x, phys.z));
-        if (h.indexOf('trace') >= 0 && i % 15 === 0) (window.__trace = window.__trace || []).push((i / 60).toFixed(2) + 's ' + phys.x.toFixed(0) + ',' + phys.z.toFixed(0) + ' i' + phys.trackIdx + ' y' + (phys.groundY || 0).toFixed(1) + ' ' + Math.round(phys.speed * 3.6) + 'km/h');
+        if (h.indexOf('trace') >= 0 && i % 15 === 0) (window.__trace = window.__trace || []).push((i / 60).toFixed(2) + 's ' + phys.x.toFixed(0) + ',' + phys.z.toFixed(0) + ' i' + phys.trackIdx + ' y' + (phys.groundY || 0).toFixed(1) + ' ' + Math.round(phys.speed * 3.6) + 'km/h' + (track.traffic ? (() => { let b = null, bd = 1e9; for (const v of track.traffic) { if (v.wx == null) continue; const d = Math.hypot(v.wx - phys.x, v.wz - phys.z); if (d < bd) { bd = d; b = v; } } return b ? ' veh ' + bd.toFixed(1) + 'm v' + Math.round(b.v * 3.6) + ' hit' + b.hitT.toFixed(1) + ' lat' + b.lat.toFixed(1) + ' me' + (phys.lateral || 0).toFixed(1) : ''; })() : ''));
       }
       if (h.indexOf('trace') >= 0) {   // trace: Verlauf Position / Streckenindex / Fahrbahnhöhe / Tempo
         const d = document.createElement('div'); d.textContent = window.__trace.join(' | ');

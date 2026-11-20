@@ -197,6 +197,79 @@
     exhaust: { type: 'round', tips: [[-0.64, 0.275, 0.042], [0.64, 0.275, 0.042]] }
   };
 
+  // ------------------------------------------------------------------ E60 M5
+  // 5er Limousine (LCI 2007–2010) als M5 mit S85-V10: Länge 4855 mm, Breite 1846 mm, Höhe 1469 mm, Radstand 2889 mm, Spur 1580/1566 mm.
+  // Kurzes hohes Stufenheck („Bangle-Heck“) mit kleiner Abrisskante, Hofmeister-Knick im kleinen Dreiecksfenster hinten,
+  // Doppelscheinwerfer mit zwei Angel Eyes und der Lidstrich-Leiste („Eyebrow“) oben, schmale hohe Nieren mit schwarzen
+  // Stäben, M-Schürze mit drei großen Einlässen, Kiemen hinter dem Vorderrad, keilförmige LED-Rückleuchten mit den
+  // waagrechten Leuchtbändern (LCI) vom Kotflügel in den Kofferraumdeckel, Diffusor mit vier Endrohren.
+  M.e60 = {
+    id: 'e60', name: 'E60 M5', sub: 'M5 · V10 · 2005–2010', engine: 'S85 V10-Sauger',
+    XF: 2.325, XR: -2.535, AXF: 1.4445, AXR: -1.4445, wheelR: 0.342, archR: 0.412, archCY: 0.352,
+    GH_F: 0.98, GH_R: -1.74, trackHalf: 0.79,
+    halfW: [[-2.535, 0.76], [-2.52, 0.85], [-2.49, 0.895], [-2.38, 0.92], [-2.0, 0.93], [-1.4445, 0.935], [-0.9, 0.926], [0, 0.922], [0.9, 0.926], [1.4445, 0.932], [1.85, 0.922], [2.1, 0.902], [2.21, 0.876], [2.27, 0.836], [2.305, 0.776], [2.325, 0.70]],
+    yBot: [[-2.535, 0.42], [-2.52, 0.33], [-2.48, 0.27], [-2.38, 0.23], [-2.0, 0.21], [0, 0.195], [2.0, 0.195], [2.18, 0.185], [2.27, 0.195], [2.305, 0.235], [2.325, 0.29]],
+    yShoulder: [[-2.535, 0.66], [-2.50, 0.80], [-2.42, 0.90], [-1.8, 0.925], [-1.0, 0.905], [0, 0.88], [1.0, 0.85], [1.7, 0.81], [2.06, 0.77], [2.22, 0.71], [2.29, 0.64], [2.325, 0.56]],
+    // hoher kurzer Kofferraum mit Abrisskante, darüber die schräge Heckscheibe; lange flache Haube
+    yDeck: [[-2.535, 0.84], [-2.528, 0.93], [-2.512, 0.985], [-2.485, 1.03], [-2.43, 1.058], [-2.2, 1.064], [-1.95, 1.066], [-1.74, 1.064], [-0.6, 1.036], [0.2, 1.005], [0.98, 0.958], [1.35, 0.915], [1.8, 0.876], [2.1, 0.85], [2.22, 0.835], [2.28, 0.812], [2.31, 0.776], [2.322, 0.71], [2.325, 0.61]],
+    roofLine: [[-1.74, 1.064], [-1.66, 1.12], [-1.55, 1.19], [-1.42, 1.26], [-1.25, 1.325], [-1.05, 1.375], [-0.8, 1.418], [-0.5, 1.446], [-0.2, 1.452], [0.05, 1.434], [0.25, 1.385], [0.5, 1.265], [0.75, 1.125], [0.98, 0.968]],
+    roofHW: [[-1.74, 0.80], [-1.6, 0.765], [-1.3, 0.715], [-0.5, 0.70], [0.0, 0.705], [0.45, 0.745], [0.75, 0.79], [0.98, 0.83]],
+    win: {
+      chrome: [[-1.66, -0.06], [1.02, -0.06], [1.02, 1.0], [-0.92, 1.0], [-1.24, 0.86], [-1.47, 0.55], [-1.63, 0.1]],
+      dlo: [[-1.63, 0], [1.01, 0], [1.01, 0.975], [-0.93, 0.975], [-1.23, 0.845], [-1.45, 0.55], [-1.6, 0.12]],
+      glass: [
+        [[-0.16, 0.075], [0.66, 0.075], [0.66, 0.45], [0.94, 0.93], [-0.16, 0.93]],                                         // Vordertür
+        [[-0.30, 0.075], [-1.10, 0.075], [-1.10, 0.79], [-0.95, 0.93], [-0.30, 0.93]],                                      // Hintertür
+        [[-1.15, 0.075], [-1.56, 0.075], [-1.53, 0.16], [-1.42, 0.50], [-1.25, 0.76], [-1.17, 0.80], [-1.15, 0.78]]         // Dreiecksfenster mit Hofmeister-Knick
+      ],
+      ws: [0.10, 0.99, 0.135, 0.94], rw: [-1.735, -1.06, -1.705, -1.09], rwInset: 0.07
+    },
+    gaps: {
+      lines: [[[0.95, 0.27], [0.95, 0.85], [0.935, 0.99]], [[-0.23, 0.27], [-0.23, 1.03]], [[1.96, 0.60], [2.07, 0.655], [2.2, 0.672]],
+        [[-1.93, 0.55], [-2.06, 0.595], [-2.54, 0.60]],                                                                       // Stoßfänger hinten
+        [[-1.78, 1.052], [-2.0, 1.04], [-2.3, 1.036], [-2.47, 1.026]]],                                                       // Kofferraumdeckel
+      rearDoor: -1.17, doorFront: 0.95, doorBottom: 0.27, hood: [1.01, 2.22]
+    },
+    molding: null, charLine: [2.1, -2.48], swage: [[1.03, 0.40], [-1.03, 0.43]], hoodV: [1.05, 2.2, 0.5, 0.34],
+    // schmale, hohe Nieren mit dickem Chromrahmen und schwarzen Stäben (M)
+    kidney: { poly: [[0.028, 0.602], [0.16, 0.598], [0.208, 0.616], [0.232, 0.665], [0.228, 0.735], [0.205, 0.765], [0.028, 0.772]], round: 0.026, frame: 0.017, depth: 0.034, slats: 9, slatW: 0.0055, slatMat: 'slat' },
+    // Doppelscheinwerfer: innen spitz zur Niere, außen um die Ecke; zwei Angel Eyes, oben die Lidstrich-Leiste mit Blinker
+    head: { dark: false, bowl: 0.62,
+      poly: [[0.262, 0.70], [0.30, 0.672], [0.38, 0.648], [0.50, 0.636], [0.62, 0.635], [0.72, 0.645], [0.80, 0.668], [0.845, 0.70], [0.852, 0.742], [0.83, 0.774], [0.76, 0.79], [0.62, 0.794], [0.48, 0.788], [0.36, 0.772], [0.29, 0.746]],
+      lenses: [[0.432, 0.705, 0.05], [0.628, 0.706, 0.054]], rings: true, drl: [],
+      ind: [[0.31, 0.752], [0.40, 0.766], [0.52, 0.774], [0.64, 0.776], [0.76, 0.772], [0.826, 0.762], [0.822, 0.776], [0.76, 0.787], [0.62, 0.791], [0.48, 0.785], [0.36, 0.77], [0.31, 0.758]], indA: null },
+    // M-Schürze: großer Mitteleinlass unter dem Kennzeichen, außen zwei hohe Einlässe mit Steg (keine Nebelscheinwerfer)
+    intake: { centerPoly: [[-0.40, 0.432], [0.40, 0.432], [0.445, 0.24], [-0.445, 0.24]], centerRound: 0.02, bars: [0.31],
+      pocketPoly: [[0.53, 0.475], [0.76, 0.49], [0.83, 0.45], [0.825, 0.31], [0.75, 0.25], [0.55, 0.255], [0.495, 0.34]], pocketRound: 0.02, fog: null, pocketBar: 0.355 },
+    frontDecals: [
+      { p: [[0.36, 0.768], [0.52, 0.779], [0.66, 0.781], [0.80, 0.773]], line: 0.004, mat: 'amber', off: 0.0165 },                 // Blinker-LEDs in der Lidstrich-Leiste
+      { p: [[0.27, 0.62], [0.56, 0.615], [0.84, 0.62]], line: 0.004, mat: 'dark', off: 0.004 },                                     // Fuge unter den Scheinwerfern
+      { p: [[-0.80, 0.215], [0.80, 0.215]], line: 0.016, mat: 'trim', off: 0.005, both: false }                                     // schwarze Lippe
+    ],
+    // M-Kiemen hinter dem Vorderrad: dunkles Feld mit drei Chromstegen
+    sideDecals: [
+      { p: [[1.00, 0.63], [1.17, 0.63], [1.17, 0.70], [1.00, 0.70]], mat: 'dark', off: 0.003 },
+      { p: [[1.005, 0.648], [1.165, 0.648]], line: 0.008, mat: 'chrome', off: 0.005 },
+      { p: [[1.005, 0.668], [1.165, 0.668]], line: 0.008, mat: 'chrome', off: 0.005 },
+      { p: [[1.005, 0.688], [1.165, 0.688]], line: 0.008, mat: 'chrome', off: 0.005 }
+    ],
+    plateF: [0.44, 0.55], tow: [0.28, 0.40], roundelY: 0.83, split: { y: 0.17, w: 0.9, ref: 0.24 },
+    mirror: [0.78, 1.07, 1.03], handles: [-0.04, -0.98], handleY: 0.925, sideInd: [1.6, 1.66, 0.79, 0.81],
+    rails: null, antenna: { type: 'fin', x: -1.0 },
+    // Abrisskante auf dem Kofferraumdeckel (M5)
+    roofSpoiler: -2.455, spoilerFlush: true, spoilerLen: 0.05, spoilerDrop: 0.03, wiper: [0.89, 1.02], rearWiper: null,
+    // keilförmige Rückleuchten vom Kotflügel in den Deckel, LCI-Leuchtbänder: oben durchgehend und außen nach unten (L), darunter ein zweites Band
+    tail: { poly: [[0.36, 0.995], [0.38, 0.955], [0.52, 0.925], [0.72, 0.892], [0.88, 0.872], [0.915, 0.895], [0.912, 0.975], [0.87, 1.0], [0.62, 1.008], [0.36, 1.006]], deep: true, split: 0.52, lineW: 0.014,
+      inner: [], lines: [[[0.39, 0.986], [0.62, 0.99], [0.85, 0.986], [0.893, 0.966], [0.896, 0.9]], [[0.58, 0.935], [0.74, 0.912], [0.865, 0.898]]],
+      rev: [[0.40, 0.962], [0.49, 0.945], [0.49, 0.962], [0.40, 0.975]],
+      side: [[-2.53, 0.872], [-2.45, 0.878], [-2.36, 0.912], [-2.30, 0.958], [-2.34, 0.995], [-2.45, 1.004], [-2.53, 1.004]],
+      sideLines: [[[-2.525, 0.984], [-2.42, 0.986], [-2.335, 0.976]]] },
+    tailgate: { half: 0.52, y0: 0.70, y1: 1.05 }, plateR: [0.745, 0.855], roundelR: 1.02, chromeBar: [0.864, 0.874],
+    badges: [{ t: 'M5', z: 0.44, y: 0.89, font: 'italic bold 56px Arial', w: 0.12 }],
+    diffuser: [[-0.86, 0.22], [0.86, 0.22], [0.82, 0.345], [-0.82, 0.345]], reflectors: [0.74, 0.88, 0.44, 0.458],
+    exhaust: { type: 'round', tips: [[-0.67, 0.28, 0.04], [-0.56, 0.28, 0.04], [0.56, 0.28, 0.04], [0.67, 0.28, 0.04]] }
+  };
+
   // ------------------------------------------------------------------ Koenigsegg Jesko Absolut
   // Mittelmotor-Hypercar (2021+): Länge 4610 mm, Breite 2030 mm, Höhe 1210 mm, Radstand 2700 mm, Spur 1705/1659 mm.
   // Flache, spitze Nase mit großem Mittel-Einlass, schmale Scheinwerfer oben auf den Kotflügeln, tropfenförmige Kanzel
@@ -512,5 +585,5 @@
   M.zipfer = { id: 'zipfer', logo: 'Zipfer', name: 'Zipfer Märzen', sub: 'Fahrende Bierflasche · bis ca. 130 km/h', engine: 'Märzen-Reihensechser', badges: [] };
 
   window.CAR_MODELS = M;
-  window.CAR_ORDER = ['e46', 'f21', 'f31', 'g31', 'jesko', 'fusion', 'focus', 'polo', 'tractor', 'moped', 'zipfer', 'wheelchair', 'rollator'];
+  window.CAR_ORDER = ['e46', 'f21', 'f31', 'g31', 'e60', 'jesko', 'fusion', 'focus', 'polo', 'tractor', 'moped', 'zipfer', 'wheelchair', 'rollator'];
 })();

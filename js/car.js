@@ -537,6 +537,7 @@
     geo.setAttribute('uv', new T.Float32BufferAttribute(uv, 2));
     geo.setIndex(idx);
     geo.computeVertexNormals();
+    geo.userData.grid = { rows: secs.length, cols: loopN, xs: secs.map(q => q.x) };   // für vereinfachte Kopien (Autobahn-Verkehr)
 
     // Endkappen (vorn/hinten), flach, Lackfarbe
     const capX = Math.min(1.92, XF - 0.2), capSec = section(capX);

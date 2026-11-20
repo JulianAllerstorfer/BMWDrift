@@ -139,6 +139,10 @@
       pit: [[-2314, -8], [-2315, 8], [-2321, 22], [-2330, 34]],
       lift: { x0: -2300.5, x1: -2295, z0: -46.5, z1: -37 },
       gas: null, world: 2.0
+    },
+    // Autobahn: endlos, eigener Aufbau mit Verkehr in highway.js
+    autobahn: {
+      id: 'autobahn', name: 'Autobahn', desc: 'Endlos · 3 Spuren · Verkehr · knapp vorbei = Bonus', fuel: false, highway: true
     }
   };
 
@@ -254,6 +258,7 @@
     };
   }
   function build(scene, renderer, mapId) {
+    if (MAPS[mapId] && MAPS[mapId].highway && window.Highway) return Highway.build(scene, renderer, mapId);
     const MAP = MAPS[mapId] || MAPS.hakone;
     const W = MAP.world;
     const path = buildPath(MAP.ctrl, true, 1.0);
@@ -1371,5 +1376,5 @@
     };
   }
 
-  window.Track = { build, MAPS, ORDER: ['hakone', 'bridge', 'big', 'mountain', 'straight'], _buildPath: buildPath };
+  window.Track = { build, MAPS, ORDER: ['hakone', 'bridge', 'big', 'mountain', 'straight', 'autobahn'], _buildPath: buildPath };
 })();

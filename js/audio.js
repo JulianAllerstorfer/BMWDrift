@@ -20,7 +20,7 @@ class EngineProc extends AudioWorkletProcessor {
     this.sr = sampleRate; this.phase = 0; this.cyl = 6;
     this.camp = [1.0, 0.86, 0.95, 0.82, 1.03, 0.9];
     this.coff = [0, 0.004, -0.003, 0.006, -0.002, 0.003];
-    this.pt = new Float32Array(6).fill(1e9); this.pa = new Float32Array(6);
+    this.pt = new Float32Array(16).fill(1e9); this.pa = new Float32Array(16);   // Platz bis 16 Zylinder (V8, V10)
     this.dl = new Float32Array(8192); this.di = 0;
     this.hl = new Float32Array(2048); this.hi = 0;
     this.lpS = 0; this.hpX = 0; this.hpY = 0; this.prevY = 0; this.seed = 1234567;
@@ -194,7 +194,13 @@ registerProcessor('engine-proc', EngineProc);`;
       camp: [1.0, 0.82, 0.97, 0.8, 1.04, 0.86, 0.95, 0.84], coff: [0, 0.006, -0.004, 0.008, -0.003, 0.005, -0.002, 0.007], crackle: 0.22,
       whistle: { base: 1500, k: 3900, vol: 0.055, type: 'sine' }, bov: { vol: 0.65, f1: 1700, f2: 4200 }, vol: 1.25 }
   };
-  ENGINE_CFG.jeskop = ENGINE_CFG.jesko;   // Super-98-Variante klingt gleich
+  ENGINE_CFG.jeskop = ENGINE_CFG.jesko;
+  // E60 M5 – S85-V10-Sauger mit Einzeldrosselklappen: im Leerlauf ein kehliges, leicht unruhiges Grollen,
+  // oben raus das helle Kreischen bis 8250/min (Zündfrequenz bis ~690 Hz), lautes Ansaugheulen, kurze Krümmer,
+  // die beiden Bänke zünden je fünf Zylinder unregelmäßig -> rauer Unterton, kein Turbo
+  ENGINE_CFG.e60 = { cyl: 10, pipe: 0.0074, refl: 0.64, header: 0.0017, hrefl: 0.44, noise: 0.11, intake: 0.95, damp: 0.33, rasp: 0.5, gain: 0.27, tick: 0, muffle: 2300,
+    camp: [1.0, 0.9, 0.97, 0.88, 1.03, 0.93, 0.98, 0.87, 1.02, 0.91], coff: [0, 0.006, -0.002, 0.007, -0.003, 0.005, -0.001, 0.006, -0.002, 0.004], crackle: 0.08,
+    pw: 0.5, whistle: null, bov: null, vol: 1.2 };   // Super-98-Variante klingt gleich
 
   // Hupen je Fahrzeug: Grundtöne (Hz), Formant-Filter, Lautstärke
   const HORNS = {
