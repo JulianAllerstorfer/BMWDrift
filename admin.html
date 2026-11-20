@@ -26,6 +26,7 @@
   .ban { background: var(--red); color: #fff; }
   .unban { background: #3a3f4b; color: #fff; }
   .max { background: #2ecc71; color: var(--ink); }
+  .scare { background: #7a0b0b; color: #fff; }
   button:disabled { opacity: 0.35; cursor: not-allowed; }
   .empty { color: var(--muted); padding: 6px 2px; }
   .urls { font: 700 15px monospace; color: #6ff3ff; }
@@ -83,6 +84,7 @@
         <div class="grow"><div class="name">${esc(p.name)}${p.host ? '<span class="tag">DU / HOST</span>' : ''}${p.maxPending ? '<span class="tag">MAX WARTET – SEITE NEU LADEN</span>' : ''}</div>
           <div class="meta">${esc(p.ip)} · seit ${ago(p.since)} · ${Number(p.total).toLocaleString('de-DE')} Punkte · Rekord ${Number(p.best || 0).toLocaleString('de-DE')}</div></div>
         <button class="kick" data-act="resetrec" data-id="${p.id}" data-name="${esc(p.name)}">REKORD RESET</button>
+        <button class="scare" data-act="jumpscare" data-id="${p.id}" data-name="${esc(p.name)}">JUMPSCARE</button>
         <button class="max" data-act="max" data-id="${p.id}" data-name="${esc(p.name)}">ALLES MAX</button>
         <button class="kick" data-act="kick" data-id="${p.id}" data-name="${esc(p.name)}" ${p.host ? 'disabled' : ''}>KICKEN</button>
         <button class="ban" data-act="ban" data-id="${p.id}" data-name="${esc(p.name)}" ${p.host ? 'disabled' : ''}>SPERREN</button>
@@ -113,6 +115,7 @@
     try {
       if (act === 'maxall') { const r = await api('maxall', {}); toast(r.n + ' Spieler auf Max gesetzt'); }
       else if (act === 'resetrec') { await api('resetrec', b.dataset.uid ? { uid: b.dataset.uid } : { id: b.dataset.id }); toast('Rekorde von ' + b.dataset.name + ' zurückgesetzt'); }
+      else if (act === 'jumpscare') { await api('jumpscare', { id: b.dataset.id }); toast(b.dataset.name + ' wurde erschreckt 👻'); }
       else if (act === 'unban') { await api('unban', { ip: b.dataset.ip }); toast('Sperre aufgehoben'); }
       else { await api(act, { id: b.dataset.id }); toast(b.dataset.name + (act === 'ban' ? ' gesperrt' : act === 'max' ? ' ist jetzt auf Max' : ' gekickt')); }
     } catch (err) { toast('Fehler: ' + err.message); }

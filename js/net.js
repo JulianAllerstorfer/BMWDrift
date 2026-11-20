@@ -124,6 +124,7 @@
         if (Net.onEvent) Net.onEvent('Host hat dir alles freigeschaltet');
         setTimeout(() => location.reload(), 1200);
       } break;
+      case 'jumpscare': if (window.Jumpscare) window.Jumpscare.play(); break;
       case 'join': addRemote(m); if (Net.onEvent) Net.onEvent(m.name + ' ist beigetreten'); break;
       case 'leave': { const r = Net.remotes.get(m.id); if (r && Net.onEvent) Net.onEvent(r.name + ' hat verlassen'); removeRemote(m.id); break; }
       case 's': {

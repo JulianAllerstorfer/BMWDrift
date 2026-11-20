@@ -165,6 +165,12 @@ function handleAdmin(req, res, p) {
       if (!list.length) { json(res, 404, { error: 'Spieler nicht gefunden' }); return; }
       for (const c of list) { pendingMax.add(maxKey(c)); c.send({ t: 'maxprog' }); console.log(`! ${c.name} (${c.ip}) wird auf Max gesetzt`); }
       json(res, 200, { ok: true, n: list.length });
+    } else if (p === '/admin/jumpscare') {
+      const c = players.get(m.id);
+      if (!c) { json(res, 404, { error: 'Spieler nicht gefunden' }); return; }
+      c.send({ t: 'jumpscare' });
+      console.log(`! ${c.name} (${c.ip}) bekommt einen Jumpscare`);
+      json(res, 200, { ok: true });
     } else if (p === '/admin/resetrec') {
       const c = m.id ? players.get(m.id) : [...players.values()].find(x => x.uid && x.uid === m.uid);
       const r = c ? c.rec : recs.recs[m.uid];
