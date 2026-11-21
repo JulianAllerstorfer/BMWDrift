@@ -2345,6 +2345,7 @@
     let n = 0, hit = 0, carHit = 0;
     while (acc >= STEP && n < 12) {
       prevState.x = phys.x; prevState.z = phys.z; prevState.h = phys.h;
+      phys.highway = !!track.highway;
       phys.step(STEP, inp);
       hit = Math.max(hit, track.collide(phys, car.collide ? car.collide[0] : 2.25, car.collide ? car.collide[1] : 0.88));
       phys.groundY = track.groundAt ? track.groundAt(phys.x, phys.z, phys.trackIdx) : 0;   // Brücke/Rampe

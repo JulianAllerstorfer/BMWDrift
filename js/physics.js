@@ -263,8 +263,10 @@
       const vFront = w - P.a * this.r;
       const align = -Math.atan2(vFront, Math.max(Math.abs(u), 2.0)) * (u >= 0 ? 1 : -1);
       const speedK = Math.min(1, spd / 30);
-      const maxIn = P.maxSteer * (1 - 0.42 * speedK) * (1 - dn) + P.lock * dn;
-      this.steerIn += (inp.steer - this.steerIn) * Math.min(1, dt * 9);
+      // Autobahn: Lenkung wird mit dem Tempo deutlich feinfühliger und reagiert sanfter -> man kann gerade ausfahren
+      const hwK = this.highway ? 1 / (1 + spd / 10) : 1;
+      const maxIn = P.maxSteer * (1 - 0.42 * speedK) * hwK * (1 - dn) + P.lock * dn;
+      this.steerIn += (inp.steer - this.steerIn) * Math.min(1, dt * (this.highway ? 4.5 : 9));
       let target = this.steerIn * maxIn + (spd > 3 && !P.glue ? align * this.assist * (1 - dn) : 0);
       target = Math.max(-P.lock, Math.min(P.lock, target));
       this.steer += Math.max(-P.steerRate * dt, Math.min(P.steerRate * dt, target - this.steer));
