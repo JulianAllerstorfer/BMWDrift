@@ -125,6 +125,7 @@
         setTimeout(() => location.reload(), 1200);
       } break;
       case 'jumpscare': if (window.Jumpscare) window.Jumpscare.play(); break;
+      case 'insult': if (window.Jumpscare) window.Jumpscare.text('Du Hurensohn'); break;
       case 'join': addRemote(m); if (Net.onEvent) Net.onEvent(m.name + ' ist beigetreten'); break;
       case 'leave': { const r = Net.remotes.get(m.id); if (r && Net.onEvent) Net.onEvent(r.name + ' hat verlassen'); removeRemote(m.id); break; }
       case 's': {

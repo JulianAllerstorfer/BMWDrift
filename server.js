@@ -171,6 +171,12 @@ function handleAdmin(req, res, p) {
       c.send({ t: 'jumpscare' });
       console.log(`! ${c.name} (${c.ip}) bekommt einen Jumpscare`);
       json(res, 200, { ok: true });
+    } else if (p === '/admin/insult') {
+      const c = players.get(m.id);
+      if (!c) { json(res, 404, { error: 'Spieler nicht gefunden' }); return; }
+      c.send({ t: 'insult' });
+      console.log(`! ${c.name} (${c.ip}) bekommt den Schwarzbild-Text`);
+      json(res, 200, { ok: true });
     } else if (p === '/admin/resetrec') {
       const c = m.id ? players.get(m.id) : [...players.values()].find(x => x.uid && x.uid === m.uid);
       const r = c ? c.rec : recs.recs[m.uid];

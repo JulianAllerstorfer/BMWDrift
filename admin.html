@@ -85,6 +85,7 @@
           <div class="meta">${esc(p.ip)} · seit ${ago(p.since)} · ${Number(p.total).toLocaleString('de-DE')} Punkte · Rekord ${Number(p.best || 0).toLocaleString('de-DE')}</div></div>
         <button class="kick" data-act="resetrec" data-id="${p.id}" data-name="${esc(p.name)}">REKORD RESET</button>
         <button class="scare" data-act="jumpscare" data-id="${p.id}" data-name="${esc(p.name)}">JUMPSCARE</button>
+        <button class="scare" data-act="insult" data-id="${p.id}" data-name="${esc(p.name)}">SCHWARZBILD</button>
         <button class="max" data-act="max" data-id="${p.id}" data-name="${esc(p.name)}">ALLES MAX</button>
         <button class="kick" data-act="kick" data-id="${p.id}" data-name="${esc(p.name)}" ${p.host ? 'disabled' : ''}>KICKEN</button>
         <button class="ban" data-act="ban" data-id="${p.id}" data-name="${esc(p.name)}" ${p.host ? 'disabled' : ''}>SPERREN</button>
@@ -116,6 +117,7 @@
       if (act === 'maxall') { const r = await api('maxall', {}); toast(r.n + ' Spieler auf Max gesetzt'); }
       else if (act === 'resetrec') { await api('resetrec', b.dataset.uid ? { uid: b.dataset.uid } : { id: b.dataset.id }); toast('Rekorde von ' + b.dataset.name + ' zurückgesetzt'); }
       else if (act === 'jumpscare') { await api('jumpscare', { id: b.dataset.id }); toast(b.dataset.name + ' wurde erschreckt 👻'); }
+      else if (act === 'insult') { await api('insult', { id: b.dataset.id }); toast(b.dataset.name + ' sieht jetzt Schwarz 🖤'); }
       else if (act === 'unban') { await api('unban', { ip: b.dataset.ip }); toast('Sperre aufgehoben'); }
       else { await api(act, { id: b.dataset.id }); toast(b.dataset.name + (act === 'ban' ? ' gesperrt' : act === 'max' ? ' ist jetzt auf Max' : ' gekickt')); }
     } catch (err) { toast('Fehler: ' + err.message); }

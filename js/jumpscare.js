@@ -119,5 +119,19 @@
     })(start);
   }
 
-  window.Jumpscare = { play };
+  // Schwarzbild vom Admin: Vollbild schwarz mit weißem Text (~4 s)
+  let textBusy = false;
+  function text(msg, dur = 4000) {
+    if (textBusy) return; textBusy = true;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#000;pointer-events:all;display:flex;align-items:center;justify-content:center;padding:5vw;box-sizing:border-box';
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'color:#fff;font:900 clamp(40px,11vw,200px)/1.05 system-ui,-apple-system,Arial,sans-serif;text-align:center;letter-spacing:.02em';
+    wrap.appendChild(t);
+    (document.fullscreenElement || document.body).appendChild(wrap);
+    setTimeout(() => { wrap.remove(); textBusy = false; }, dur);
+  }
+
+  window.Jumpscare = { play, text };
 })();
