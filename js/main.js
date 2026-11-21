@@ -69,6 +69,7 @@
     Net.onChange = refreshMP;
     Net.onEvent = (txt) => { if (mode === 'drive') popup(txt, '', false); chatAdd({ kind: 'sys', text: txt }); refreshMP(); };
     Net.onChat = chatAdd;
+    Net.onFlip = flipStart;
     // Rekorde gelten nur so, wie der Server sie geprüft hat – im Browser geänderte Werte werden überschrieben
     Net.onRec = (r, reset) => {
       rec.best = Math.max(0, +r.best || 0);
@@ -1447,8 +1448,23 @@
     popup(track.highway ? 'STANDSTREIFEN' : 'WERKSTATT', '', false);
   }
   const jonnyFall = { gasPrev: false, hinted: false };
+  // Admin-Flip: Auto liegt auf dem Dach, bis der Spieler unten rechts "ICH GEBE AUF" drückt
+  const flip = { on: false, k: 0 };
+  function flipStart() {
+    if (flip.on) return;
+    flip.on = true;
+    $('giveUp').classList.remove('hidden');
+    popup('AUF DEM DACH!', 'Unten rechts: ICH GEBE AUF', true);
+  }
+  function flipGiveUp() {
+    if (!flip.on) return;
+    flip.on = false;
+    $('giveUp').classList.add('hidden');
+  }
+  $('giveUp').addEventListener('click', flipGiveUp);
   function resetCar() {
     if (lift.phase === 'up' || lift.phase === 'fade') return;   // Hebebühne fährt gerade
+    if (flip.on) { popup('AUF DEM DACH', 'Drück unten rechts ICH GEBE AUF', true); return; }
     if (car && car.seatNow) car.seatNow();   // R: Jonny sitzt sofort wieder drin
     if (copActive()) { popup('POLIZEI', 'Davonteleportieren gilt nicht!', true); return; }
     if (track.inPaddock(phys.x, phys.z)) { placeAtSpawn(); cancelChain(); camState.init = false; return; }
@@ -2339,6 +2355,9 @@
       jonnyFall.gasPrev = gas;
       inp.throttle = 0; inp.brake = 0.45; inp.steer = 0; inp.handbrake = true; inp.shiftUp = inp.shiftDown = false;
     }
+    // Admin-Flip: auf dem Dach geht nichts mehr
+    flip.k = Math.max(0, Math.min(1, flip.k + (flip.on ? 1 : -1) * dt / 0.9));
+    if (flip.on || flip.k > 0) { inp.throttle = 0; inp.brake = 0; inp.steer = 0; inp.handbrake = true; inp.shiftUp = inp.shiftDown = false; }
     // Tank leer: kaum noch Leistung
     if (track.fuel && cfg.fuelOn && fuel <= 0) inp.throttle *= 0.12;
     acc += dt;
@@ -2361,6 +2380,8 @@
       if (window.Jonny) Jonny.showBubble(car.root, 'AUAAA!', 1.95);
     }
     phys.jonnyFall = car.fallState && car.fallState() !== 'seat' ? 1 : 0;
+    if (flip.on) { phys.vx = phys.vz = phys.u = phys.r = phys.spin = 0; }   // liegt still auf dem Dach
+    phys.flip = flip.k;
     if (n >= 12) { acc = 0; prevState.x = phys.x; prevState.z = phys.z; prevState.h = phys.h; }
     if (n === 0 && prevState.x === 0 && prevState.z === 0) { prevState.x = phys.x; prevState.z = phys.z; prevState.h = phys.h; }
 
@@ -2382,6 +2403,7 @@
     phys.renderY = gY;
     car.root.position.set(ix, lift.y + gY, iz); phys.liftY = lift.y;
     car.root.rotation.y = ih; car.root.rotation.z = pitch;   // auf der Rampe / am Berg Nase hoch/runter
+    Net.applyFlip(car, flip.k);
     const R = car.dims.WHEEL_R;
     car.update({
       frontSpin: phys.u / R * dt,

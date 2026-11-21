@@ -171,6 +171,12 @@ function handleAdmin(req, res, p) {
       c.send({ t: 'jumpscare' });
       console.log(`! ${c.name} (${c.ip}) bekommt einen Jumpscare`);
       json(res, 200, { ok: true });
+    } else if (p === '/admin/flip') {
+      const c = players.get(m.id);
+      if (!c) { json(res, 404, { error: 'Spieler nicht gefunden' }); return; }
+      c.send({ t: 'flip' });
+      console.log(`! ${c.name} (${c.ip}) landet auf dem Dach`);
+      json(res, 200, { ok: true });
     } else if (p === '/admin/insult') {
       const c = players.get(m.id);
       if (!c) { json(res, 404, { error: 'Spieler nicht gefunden' }); return; }

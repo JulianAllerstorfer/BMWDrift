@@ -125,6 +125,7 @@
         setTimeout(() => location.reload(), 1200);
       } break;
       case 'jumpscare': if (window.Jumpscare) window.Jumpscare.play(); break;
+      case 'flip': if (Net.onFlip) Net.onFlip(); break;
       case 'insult': if (window.Jumpscare) window.Jumpscare.text('Du Hurensohn'); break;
       case 'join': addRemote(m); if (Net.onEvent) Net.onEvent(m.name + ' ist beigetreten'); break;
       case 'leave': { const r = Net.remotes.get(m.id); if (r && Net.onEvent) Net.onEvent(r.name + ' hat verlassen'); removeRemote(m.id); break; }
@@ -203,6 +204,7 @@
       jy: ph.shout || 0,   // Jonnys letzter Spruch (Zähler*100 + Nummer)
       jf: ph.jonnyFall ? 1 : 0,   // Jonny ist aus dem Rollstuhl gefallen
       np: ph.noPlate ? 1 : 0,   // Moped ohne Kennzeichen (getaferlt)
+      fl: q(ph.flip || 0, 100),   // Admin-Flip: 0 = normal, 1 = auf dem Dach
       cp: ph.cop || 0           // Polizei bei diesem Spieler (Verfolgung, Film mit Prüfstand), siehe main.js copNetState
     };
   };
@@ -213,6 +215,23 @@
     if (Net._sendT < 1 / SEND_HZ) return;
     Net._sendT = 0;
     send(Net.snapshot(ph));
+  };
+
+  // Admin-Flip: Auto um die Längsachse aufs Dach drehen (k: 0 = normal, 1 = auf dem Dach), mit kleinem Hüpfer
+  Net.applyFlip = function (car, k) {
+    const root = car.root;
+    root.rotation.order = 'YZX';   // erst um die eigene Längsachse rollen, dann Steigung, dann Gierwinkel
+    if (!(k > 0.001)) { root.rotation.x = 0; return; }
+    if (car._flipH == null) {      // Fahrzeughöhe einmal im Normalzustand messen
+      const x = root.rotation.x, y = root.position.y;
+      root.rotation.x = 0; root.position.y = 0; root.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(root);
+      car._flipH = Math.max(0.6, Math.min(3.5, box.max.y || 1.4));
+      root.rotation.x = x; root.position.y = y;
+    }
+    const s = Math.min(1, k) * Math.min(1, k) * (3 - 2 * Math.min(1, k));   // weich ein-/ausblenden
+    root.rotation.x = Math.PI * s;
+    root.position.y += car._flipH * s + Math.sin(Math.PI * s) * 0.9;
   };
 
   function lerpAngle(a, b, f) { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a + d * f; }
@@ -233,12 +252,14 @@
         x: a.x + (b.x - a.x) * f + b.vx * ex, z: a.z + (b.z - a.z) * f + b.vz * ex, h: lerpAngle(a.h, b.h, f),
         vx: a.vx + (b.vx - a.vx) * f, vz: a.vz + (b.vz - a.vz) * f, st: a.st + (b.st - a.st) * f,
         ro: a.ro + (b.ro - a.ro) * f, pi: a.pi + (b.pi - a.pi) * f, u: a.u + (b.u - a.u) * f, sp: b.sp, sr: b.sr, sf: b.sf, hb: b.hb, br: b.br,
-        gy: (a.gy || 0) + ((b.gy || 0) - (a.gy || 0)) * f, gr: (a.gr || 0) + ((b.gr || 0) - (a.gr || 0)) * f
+        gy: (a.gy || 0) + ((b.gy || 0) - (a.gy || 0)) * f, gr: (a.gr || 0) + ((b.gr || 0) - (a.gr || 0)) * f,
+        fl: (a.fl || 0) + ((b.fl || 0) - (a.fl || 0)) * f
       };
       r.cur = cur;
       const car = r.car;
       car.root.visible = true;
       car.root.position.set(cur.x, (b.ly || 0) + cur.gy, cur.z); car.root.rotation.y = cur.h; car.root.rotation.z = Math.atan(cur.gr);
+      Net.applyFlip(car, cur.fl);
       const R = car.dims.WHEEL_R;
       car.update({ frontSpin: cur.u / R * dt, rearSpin: cur.hb ? 0 : (cur.u + cur.sp) / R * dt, steer: cur.st, roll: cur.ro, pitch: cur.pi, throttle: b.th || 0, speed: cur.u, beta: Math.atan2(cur.vx * Math.sin(cur.h) + cur.vz * Math.cos(cur.h), Math.max(0.1, Math.abs(cur.u))), dt });
       // Jonny-Sprüche der anderen: Sprechblase + Stimme (leiser je weiter weg)
