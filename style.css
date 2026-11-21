@@ -395,7 +395,8 @@ body.touch .clock { right: 76px; top: 226px; }
   .logo-sub { font-size: 11px; letter-spacing: 2px; }
   .panel { left: 8px; right: 8px; bottom: 8px; top: auto; max-height: 58vh; }
   .clock { right: 10px; top: 104px; width: 92px; text-align: center; }
-  body.touch .clock { right: 60px; top: 104px; }
+  body.touch .mini { width: 80px; height: 80px; }
+  body.touch .clock { right: 54px; top: 92px; }
   .chain { top: 120px; }
   .fuel { bottom: calc(var(--tb, 60px) + 24px); }
   .chat { bottom: calc(var(--tb, 60px) * 2 + 40px); width: 60vw; }
