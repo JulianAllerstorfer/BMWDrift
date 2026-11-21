@@ -34,6 +34,22 @@
   #msg { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--yellow); color: var(--ink); font: 900 14px var(--heavy); padding: 10px 18px; border-radius: 10px; border: 2px solid var(--ink); opacity: 0; transition: opacity .2s; pointer-events: none; }
   #msg.on { opacity: 1; }
   .off { color: var(--red); font-weight: 700; }
+  .drive { background: #2f6fdc; color: #fff; }
+  .tag.red { background: var(--red); }
+  /* Steuer-Fenster */
+  #ctl { position: fixed; inset: 0; background: rgba(8,9,12,.92); z-index: 20; display: none; align-items: center; justify-content: center; padding: 16px; }
+  #ctl.on { display: flex; }
+  #ctl .box { background: var(--panel); border: 2px solid var(--ink); border-radius: 14px; padding: 16px; width: 100%; max-width: 560px; box-shadow: 5px 5px 0 rgba(0,0,0,.4); }
+  #ctl canvas { width: 100%; aspect-ratio: 16 / 10; background: #0b0d12; border-radius: 10px; display: block; }
+  #ctlStat { display: flex; gap: 14px; align-items: baseline; margin: 10px 0; flex-wrap: wrap; }
+  #ctlSpeed { font: 900 30px var(--heavy); color: var(--yellow); }
+  #ctlMode { color: var(--muted); font-weight: 700; }
+  .keys { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 12px; }
+  .key { background: var(--row); color: var(--muted); border-radius: 6px; padding: 4px 9px; font: 700 12px Arial; }
+  .key.down { background: var(--yellow); color: var(--ink); }
+  .pads { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; user-select: none; -webkit-user-select: none; touch-action: none; }
+  .pads button { padding: 16px 4px; background: var(--row); color: #fff; font-size: 14px; }
+  .pads button.down { background: var(--yellow); color: var(--ink); }
 </style>
 </head>
 <body>
@@ -45,6 +61,20 @@
     <div class="ctitle">SPIELER <small id="count" style="margin-left:10px"></small> <button class="max" data-act="maxall" style="margin-left:auto">ALLE AUF MAX</button></div>
     <div id="players"></div>
   </div>
+  <div id="ctl"><div class="box">
+    <div class="ctitle"><span>DU STEUERST <span id="ctlName" style="color:#fff"></span></span>
+      <button class="ban" id="ctlStop" style="margin-left:auto">LOSLASSEN (ESC)</button></div>
+    <canvas id="ctlMap" width="800" height="500"></canvas>
+    <div id="ctlStat"><span id="ctlSpeed">0 km/h</span><span id="ctlMode">warte auf Daten …</span></div>
+    <div class="keys">
+      <span class="key" data-k="s">◀ ▶  A/D · Pfeile</span><span class="key" data-k="g">GAS  W · ↑</span><span class="key" data-k="b">BREMSE  S · ↓</span>
+      <span class="key" data-k="h">HANDBREMSE  Leertaste</span><span class="key">GANG  E / Q</span><span class="key">ZURÜCKSETZEN  R</span>
+    </div>
+    <div class="pads">
+      <button data-pad="left">◀</button><button data-pad="right">▶</button><button data-pad="hb">HB</button><button data-pad="brake">BREMSE</button><button data-pad="gas">GAS</button>
+    </div>
+  </div></div>
+
   <div class="card">
     <div class="ctitle">REKORDE <small style="margin-left:10px">vom Server geprüft</small></div>
     <div id="records"></div>
@@ -82,8 +112,9 @@
     $('players').innerHTML = st.players.length ? st.players.map(p => `
       <div class="row">
         <i class="dot" style="background:${COLORS[p.slot % COLORS.length]}"></i>
-        <div class="grow"><div class="name">${esc(p.name)}${p.host ? '<span class="tag">DU / HOST</span>' : ''}${p.maxPending ? '<span class="tag">MAX WARTET – SEITE NEU LADEN</span>' : ''}</div>
+        <div class="grow"><div class="name">${esc(p.name)}${p.host ? '<span class="tag">DU / HOST</span>' : ''}${p.maxPending ? '<span class="tag">MAX WARTET – SEITE NEU LADEN</span>' : ''}${p.ctl ? '<span class="tag red">WIRD GESTEUERT</span>' : ''}</div>
           <div class="meta">${esc(p.ip)} · seit ${ago(p.since)} · ${Number(p.total).toLocaleString('de-DE')} Punkte · Rekord ${Number(p.best || 0).toLocaleString('de-DE')}</div></div>
+        <button class="drive" data-act="drive" data-id="${p.id}" data-name="${esc(p.name)}">STEUERN</button>
         <button class="kick" data-act="resetrec" data-id="${p.id}" data-name="${esc(p.name)}">REKORD RESET</button>
         <button class="scare" data-act="jumpscare" data-id="${p.id}" data-name="${esc(p.name)}">JUMPSCARE</button>
         <button class="flip" data-act="flip" data-id="${p.id}" data-name="${esc(p.name)}">AUFS DACH</button>
@@ -110,6 +141,7 @@
   document.addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-act]'); if (!b) return;
     const act = b.dataset.act;
+    if (act === 'drive') { ctlTake(b.dataset.id, b.dataset.name); return; }
     if (act === 'maxall' && !confirm('Alle Spieler auf Max setzen? Das Spiel lädt bei allen kurz neu.')) return;
     if (act === 'max' && !confirm(b.dataset.name + ' alles auf Max setzen? Level 50, Geld, alle Teile, Reifen, Lacke. Das Spiel lädt bei ihm kurz neu.')) return;
     if (act === 'resetrec' && !confirm('Rekorde von ' + b.dataset.name + ' zurücksetzen? Bester Drift und Challenge-Rekorde gehen auf 0.')) return;
@@ -126,6 +158,93 @@
     } catch (err) { toast('Fehler: ' + err.message); }
     refresh();
   });
+
+  // ---------- Steuer übernehmen ----------
+  // Eigene WebSocket-Verbindung zum Server; Tasten gehen 20x pro Sekunde an das Spiel des Spielers.
+  let ws = null, ctlOn = false, tMode = '', trail = [], last = null, lastAt = 0;
+  const K = {}, pad = {}, once = { u: 0, d: 0, r: 0 };
+  function wsOpen(cb) {
+    if (ws && ws.readyState === 1) { cb(); return; }
+    if (ws && ws.readyState === 0) { ws.addEventListener('open', cb, { once: true }); return; }
+    ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/admin/ws?token=' + encodeURIComponent(TOKEN));
+    ws.onopen = cb;
+    ws.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onWs(m); };
+    ws.onclose = () => { ws = null; if (ctlOn) { ctlClose(); toast('Verbindung zum Server verloren'); } };
+  }
+  function onWs(m) {
+    if (m.t === 'ctlok') { ctlOn = true; $('ctlName').textContent = m.name; $('ctlName').style.color = COLORS[m.slot % COLORS.length]; $('ctl').classList.add('on'); toast('Du fährst jetzt ' + m.name); refresh(); }
+    else if (m.t === 'ctlend') { ctlClose(); toast(m.why); refresh(); }
+    else if (m.t === 'pos') { last = m; lastAt = performance.now(); trail.push([m.x, m.z]); if (trail.length > 400) trail.shift(); }
+    else if (m.t === 'ctlstate') {
+      const t = { drive: 'fährt', pause: 'Pause', garage: 'ist in der Garage – steuern geht erst, wenn er losfährt', spectate: 'ist im Startmenü – steuern geht erst, wenn er losfährt', loading: 'lädt noch …' };
+      tMode = m.mode; $('ctlMode').textContent = t[m.mode] || m.mode;
+    }
+  }
+  function ctlTake(id, name) {
+    tMode = ''; trail = []; last = null; $('ctlMode').textContent = 'warte auf Daten …';
+    wsOpen(() => ws.send(JSON.stringify({ t: 'take', id })));
+  }
+  function ctlClose() {
+    ctlOn = false; $('ctl').classList.remove('on');
+    for (const k in K) K[k] = false; for (const k in pad) pad[k] = false;
+  }
+  function ctlRelease() { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'release' })); ctlClose(); toast('Steuer zurückgegeben'); refresh(); }
+  $('ctlStop').addEventListener('click', ctlRelease);
+
+  const MAPK = { ArrowLeft: 1, ArrowRight: 1, ArrowUp: 1, ArrowDown: 1, KeyA: 1, KeyD: 1, KeyW: 1, KeyS: 1, Space: 1 };
+  window.addEventListener('keydown', (e) => {
+    if (!ctlOn) return;
+    if (e.code === 'Escape') { ctlRelease(); return; }
+    if (MAPK[e.code] || e.code === 'KeyE' || e.code === 'KeyQ' || e.code === 'KeyR') e.preventDefault();
+    if (e.repeat) return;
+    K[e.code] = true;
+    if (e.code === 'KeyE') once.u = 1; if (e.code === 'KeyQ') once.d = 1; if (e.code === 'KeyR') once.r = 1;
+  });
+  window.addEventListener('keyup', (e) => { K[e.code] = false; });
+  window.addEventListener('blur', () => { for (const k in K) K[k] = false; });
+  document.querySelectorAll('.pads button').forEach(b => {
+    const on = (v) => (e) => { e.preventDefault(); pad[b.dataset.pad] = v; b.classList.toggle('down', v); };
+    b.addEventListener('pointerdown', (e) => { b.setPointerCapture(e.pointerId); on(true)(e); });
+    b.addEventListener('pointerup', on(false)); b.addEventListener('pointercancel', on(false));
+  });
+  function input() {
+    let s = 0;
+    if (K.ArrowLeft || K.KeyA || pad.left) s += 1;
+    if (K.ArrowRight || K.KeyD || pad.right) s -= 1;
+    return { t: 'in', s, g: (K.ArrowUp || K.KeyW || pad.gas) ? 1 : 0, b: (K.ArrowDown || K.KeyS || pad.brake) ? 1 : 0, h: (K.Space || pad.hb) ? 1 : 0 };
+  }
+  setInterval(() => {
+    if (!ctlOn || !ws || ws.readyState !== 1) return;
+    const m = input(); m.u = once.u; m.d = once.d; m.r = once.r; once.u = once.d = once.r = 0;
+    ws.send(JSON.stringify(m));
+    document.querySelectorAll('.keys .key[data-k]').forEach(el => el.classList.toggle('down', !!m[el.dataset.k]));
+  }, 50);
+
+  // Live-Karte: Spur der letzten Sekunden, Auto als Pfeil in der Mitte (Norden = oben)
+  function draw() {
+    requestAnimationFrame(draw);
+    if (!ctlOn) return;
+    const cv = $('ctlMap'), g = cv.getContext('2d'), W = cv.width, H = cv.height;
+    g.fillStyle = '#0b0d12'; g.fillRect(0, 0, W, H);
+    if (!last) return;
+    const sc = 2.2, cx = W / 2, cy = H / 2, X = (x) => cx + (x - last.x) * sc, Y = (z) => cy + (z - last.z) * sc;
+    g.strokeStyle = 'rgba(255,255,255,.06)'; g.lineWidth = 1;
+    const grid = 25 * sc, ox = ((-last.x * sc) % grid + grid) % grid, oy = ((-last.z * sc) % grid + grid) % grid;
+    for (let x = ox + cx % grid; x < W; x += grid) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+    for (let y = oy + cy % grid; y < H; y += grid) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+    g.strokeStyle = 'rgba(255,210,31,.55)'; g.lineWidth = 4; g.lineJoin = 'round'; g.beginPath();
+    trail.forEach(([x, z], i) => i ? g.lineTo(X(x), Y(z)) : g.moveTo(X(x), Y(z))); g.stroke();
+    const sp = Math.hypot(last.vx, last.vz);
+    // Fahrtrichtung aus der Geschwindigkeit, im Stand aus den letzten Punkten
+    let ang = sp > 1 ? Math.atan2(last.vz, last.vx) : null;
+    if (ang == null && trail.length > 5) { const a = trail[trail.length - 6], b = trail[trail.length - 1]; if (Math.hypot(b[0] - a[0], b[1] - a[1]) > 0.2) ang = Math.atan2(b[1] - a[1], b[0] - a[0]); }
+    g.save(); g.translate(cx, cy); g.rotate(ang == null ? -Math.PI / 2 : ang);
+    g.fillStyle = $('ctlName').style.color || '#ffd21f'; g.strokeStyle = '#111318'; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(16, 0); g.lineTo(-11, 10); g.lineTo(-6, 0); g.lineTo(-11, -10); g.closePath(); g.fill(); g.stroke(); g.restore();
+    $('ctlSpeed').textContent = Math.round(sp * 3.6) + ' km/h';
+    if (tMode === 'drive' && performance.now() - lastAt > 1500) $('ctlMode').textContent = 'keine Positionsdaten – Spieler ist nicht auf der Strecke';
+  }
+  draw();
 
   refresh();
   setInterval(refresh, 1500);

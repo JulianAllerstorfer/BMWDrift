@@ -75,7 +75,7 @@ const server = http.createServer((req, res) => {
 // ---------- Adminpanel (lokal frei, über den öffentlichen Link nur mit Passwort) ----------
 function adminState() {
   return {
-    players: [...players.values()].map(p => ({ id: p.id, name: p.name, ip: p.ip, slot: p.slot, total: p.total || 0, best: p.rec.best, host: p.local, since: p.since, maxPending: pendingMax.has(maxKey(p)) })),
+    players: [...players.values()].map(p => ({ id: p.id, name: p.name, ip: p.ip, slot: p.slot, total: p.total || 0, best: p.rec.best, host: p.local, since: p.since, maxPending: pendingMax.has(maxKey(p)), ctl: !!p.ctlBy })),
     records: Object.entries(recs.recs).filter(([, r]) => r.best > 0 || Object.keys(r.chal || {}).length).sort((a, b) => b[1].best - a[1].best).slice(0, 40)
       .map(([uid, r]) => ({ uid, name: r.name, best: r.best, chal: Object.values(r.chal || {}).reduce((m, v) => Math.max(m, v.pts), 0), seen: r.seen || 0 })),
     banned: [...banned.entries()].map(([ip, name]) => ({ ip, name })),
@@ -220,7 +220,7 @@ class Client {
   constructor(socket, req) {
     this.socket = socket; this.buf = Buffer.alloc(0); this.id = null; this.slot = -1;
     this.name = 'Spieler'; this.cfg = null; this.alive = true;
-    this.ip = clientIp(req); this.local = isLocal(req); this.since = Date.now();
+    this.ip = clientIp(req); this.local = isLocal(req); this.since = Date.now(); this.handler = onMessage;
     socket.setNoDelay(true);
     socket.on('data', (d) => this.onData(d));
     socket.on('close', () => this.close());
@@ -247,13 +247,15 @@ class Client {
       this.buf = this.buf.subarray(need);
       if (opcode === 8) { this.close(); return; }
       if (opcode === 9) { try { this.socket.write(Buffer.concat([Buffer.from([0x8a, payload.length]), payload])); } catch (e) { /* */ } continue; }
-      if (opcode === 1) { let msg; try { msg = JSON.parse(payload.toString()); } catch (e) { continue; } onMessage(this, msg); }
+      if (opcode === 1) { let msg; try { msg = JSON.parse(payload.toString()); } catch (e) { continue; } this.handler(this, msg); }
     }
   }
   close() {
     if (!this.alive) return;
     this.alive = false;
     try { this.socket.destroy(); } catch (e) { /* */ }
+    if (this.isAdmin) { ctlRelease(this); return; }
+    if (this.ctlBy) { const a = this.ctlBy; this.ctlBy = null; a.target = null; a.send({ t: 'ctlend', why: this.name + ' hat das Spiel verlassen' }); }
     if (this.id) {
       players.delete(this.id);
       broadcast({ t: 'leave', id: this.id }, null);
@@ -421,7 +423,11 @@ function onMessage(c, m) {
     return;
   }
   if (!c.id) return;
-  if (m.t === 's') { trackDrift(c, m, Date.now()); m.id = c.id; broadcast(m, c); }
+  if (m.t === 's') {
+    trackDrift(c, m, Date.now()); m.id = c.id; broadcast(m, c);
+    if (c.ctlBy) c.ctlBy.send({ t: 'pos', x: +m.x || 0, z: +m.z || 0, h: +m.h || 0, vx: +m.vx || 0, vz: +m.vz || 0, th: +m.th || 0, st: +m.st || 0 });
+  }
+  else if (m.t === 'ctlstate') { if (c.ctlBy) c.ctlBy.send({ t: 'ctlstate', mode: String(m.mode || '').slice(0, 12) }); }
   else if (m.t === 'cfg') {
     c.cheatFlag = false; takeChal(c, m.cfg);
     const cfg = cleanCfg(c, m.cfg); if (!cfg) return;
@@ -444,12 +450,41 @@ function onMessage(c, m) {
   else if (m.t === 'chat') onChat(c, m);
 }
 
+// ---------- Admin übernimmt das Steuer eines Spielers ----------
+// Das Adminpanel hält eine eigene WebSocket-Verbindung (/admin/ws). Seine Tasten gehen 1:1 an das Spiel des
+// Spielers, dessen eigene Eingaben solange ignoriert werden. Positionsdaten des Spielers gehen zurück ans Panel.
+function ctlRelease(a, why) {
+  const c = a.target; a.target = null;
+  if (c && c.ctlBy === a) { c.ctlBy = null; c.send({ t: 'ctl', on: false }); console.log(`! Admin gibt das Steuer von ${c.name} zurück`); }
+  if (why) a.send({ t: 'ctlend', why });
+}
+const num = (v, lo, hi) => { v = +v; return isFinite(v) ? Math.max(lo, Math.min(hi, v)) : 0; };
+function onAdminMessage(a, m) {
+  if (m.t === 'take') {
+    const c = players.get(m.id);
+    if (!c) { a.send({ t: 'ctlend', why: 'Spieler nicht gefunden' }); return; }
+    if (a.target && a.target !== c) ctlRelease(a);
+    if (c.ctlBy && c.ctlBy !== a) { const o = c.ctlBy; o.target = null; o.send({ t: 'ctlend', why: 'Ein anderes Adminfenster hat übernommen' }); }
+    c.ctlBy = a; a.target = c;
+    c.send({ t: 'ctl', on: true });
+    a.send({ t: 'ctlok', id: c.id, name: c.name, slot: c.slot });
+    console.log(`! Admin übernimmt das Steuer von ${c.name} (${c.ip})`);
+  } else if (m.t === 'in') {
+    const c = a.target; if (!c || c.ctlBy !== a) return;
+    c.send({ t: 'ci', s: num(m.s, -1, 1), g: num(m.g, 0, 1), b: num(m.b, 0, 1), h: m.h ? 1 : 0, u: m.u ? 1 : 0, d: m.d ? 1 : 0, r: m.r ? 1 : 0 });
+  } else if (m.t === 'release') ctlRelease(a);
+}
+
 server.on('upgrade', (req, socket) => {
   const key = req.headers['sec-websocket-key'];
   if (!key || (req.headers.upgrade || '').toLowerCase() !== 'websocket') { socket.destroy(); return; }
+  const url = new URL(req.url || '/', 'http://x');
+  const adminWs = url.pathname === '/admin/ws';
+  if (adminWs && !(adminAllowed(req) && safeEq(url.searchParams.get('token') || '', ADMIN_TOKEN))) { socket.destroy(); return; }
   const accept = crypto.createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
   socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
-  new Client(socket, req);
+  const cl = new Client(socket, req);
+  if (adminWs) { cl.isAdmin = true; cl.target = null; cl.handler = onAdminMessage; }
 });
 
 server.listen(PORT, '0.0.0.0', () => {

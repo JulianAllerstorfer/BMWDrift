@@ -71,6 +71,10 @@
     Net.onEvent = (txt) => { if (mode === 'drive') popup(txt, '', false); chatAdd({ kind: 'sys', text: txt }); refreshMP(); };
     Net.onChat = chatAdd;
     Net.onFlip = flipStart;
+    // Admin übernimmt das Steuer (geheim, kein Hinweis): Pause aufheben, Status ans Adminpanel melden
+    Net.onCtl = (on) => { if (on) { if (mode === 'pause') setPause(false); Net.sendCtlState(mode); } };
+    Net.onCtlReset = () => { if (mode === 'drive') resetCar(); };
+    setInterval(() => { if (Net.ctl) Net.sendCtlState(mode); }, 700);
     // Rekorde gelten nur so, wie der Server sie geprüft hat – im Browser geänderte Werte werden überschrieben
     Net.onRec = (r, reset) => {
       rec.best = Math.max(0, +r.best || 0);
@@ -1038,6 +1042,11 @@
     }
     const r = { steer, throttle: thr, brake: brk, handbrake: hb, shiftUp: !cfg.auto && edge.up, shiftDown: !cfg.auto && edge.down };
     edge.up = edge.down = false;
+    if (Net.ctl) {   // Admin fährt: eigene Eingaben zählen nicht; kommt nichts mehr an (Verbindung hakt), rollt das Auto aus
+      const c = Net.ctl, ok = performance.now() - c.at < 600;
+      r.steer = ok ? Math.max(-1, Math.min(1, c.s)) : 0; r.throttle = ok ? c.g : 0; r.brake = ok ? c.b : 0; r.handbrake = ok && !!c.h;
+      r.shiftUp = !cfg.auto && c.up; r.shiftDown = !cfg.auto && c.down; c.up = c.down = false;
+    }
     return r;
   }
 
@@ -1405,6 +1414,7 @@
   }
   function setPause(p) {
     if (mode !== 'drive' && mode !== 'pause') return;
+    if (p && Net.ctl) return;   // solange der Admin fährt, gibt es keine Pause
     mode = p ? 'pause' : 'drive';
     $('pause').classList.toggle('hidden', !p);
     if (p && Sound.ready) soundUpdate(phys.rpm, 0, 0, 0, false, false);

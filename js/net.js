@@ -126,6 +126,13 @@
       } break;
       case 'jumpscare': if (window.Jumpscare) window.Jumpscare.play(); break;
       case 'flip': if (Net.onFlip) Net.onFlip(); break;
+      // Admin übernimmt das Steuer: seine Eingaben ersetzen deine (siehe main.js readInput)
+      case 'ctl': Net.ctl = m.on ? { s: 0, g: 0, b: 0, h: 0, at: 0, up: false, down: false } : null; if (Net.onCtl) Net.onCtl(!!m.on); break;
+      case 'ci': if (Net.ctl) {
+        const c = Net.ctl; c.s = +m.s || 0; c.g = +m.g || 0; c.b = +m.b || 0; c.h = m.h ? 1 : 0; c.at = performance.now();
+        if (m.u) c.up = true; if (m.d) c.down = true;
+        if (m.r && Net.onCtlReset) Net.onCtlReset();
+      } break;
       case 'insult': if (window.Jumpscare) window.Jumpscare.text('Du Hurensohn'); break;
       case 'join': addRemote(m); if (Net.onEvent) Net.onEvent(m.name + ' ist beigetreten'); break;
       case 'leave': { const r = Net.remotes.get(m.id); if (r && Net.onEvent) Net.onEvent(r.name + ' hat verlassen'); removeRemote(m.id); break; }
@@ -173,6 +180,7 @@
 
   function onClose() {
     Net.connected = false; Net._ws = null;
+    if (Net.ctl) { Net.ctl = null; if (Net.onCtl) Net.onCtl(false); }
     pending.clear();
     for (const id of [...Net.remotes.keys()]) removeRemote(id);
     if (Net._full) { changed(); return; }
@@ -185,6 +193,7 @@
   Net.sendName = function (name) { Net._name = name; send({ t: 'name', name }); };
   Net.sendScore = function (total, drift, best, bestCar) { if (best != null) Net.myBest = best; if (bestCar) Net.myBestCar = bestCar; send({ t: 'score', total: Math.round(total), drift: Math.round(drift), best: Math.round(Net.myBest || 0), bestCar: Net.myBestCar || null }); };
   Net.sendAway = function () { send({ t: 'away' }); };
+  Net.sendCtlState = function (mode) { send({ t: 'ctlstate', mode }); };
   // Chat: getippte Nachricht bzw. Drift-Meldung; liefert false, wenn nicht verbunden
   Net.sendChat = function (text) { if (!Net.connected) return false; send({ t: 'chat', kind: 'msg', text: String(text).slice(0, 140) }); return true; };
   Net.sendDriftChat = function (kind, pts) { if (!Net.connected) return false; send({ t: 'chat', kind, pts: Math.round(pts) }); return true; };
