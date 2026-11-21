@@ -310,7 +310,12 @@
       const launch = P.idle + thrUse * (P.base.launchRpm || (P.diesel ? 1400 : 2600));
       let engRpm = engaged ? Math.max(rpmWheel, thrUse > 0.05 ? Math.min(launch, P.redline) : P.idle) : this.rpm;
       // Drehzahlbegrenzer: Schnitt über Höchstdrehzahl, Freigabe erst ~150 U/min darunter (Begrenzer-Stottern)
-      if (rpmWheel > P.redline) this.revCut = true;
+      // im höchsten Gang kein Begrenzer: der Motor regelt weich ab (Gas wird kurz vor der Höchstdrehzahl zurückgenommen)
+      // -> er hält die Drehzahl ruhig und klingt weiter wie ein Motor unter Last statt zu stottern
+      const topGear = !this.reverse && this.gear === P.gears.length - 1;
+      const softCut = topGear ? Math.max(0, Math.min(1, (P.redline - rpmWheel) / 250)) : 1;
+      if (topGear) this.revCut = false;
+      else if (rpmWheel > P.redline) this.revCut = true;
       else if (rpmWheel < P.redline - 150) this.revCut = false;
       if (this.revCut) this.limiter += dt; else this.limiter = Math.max(0, this.limiter - dt * 2);
       // 2-Step: Anti-Lag + Handbremse + Gas im Stand -> Kupplung offen, Motor stottert am Startdrehzahl-Begrenzer
@@ -333,13 +338,13 @@
       this.blowoff = !P.als && P.hasTurbo && prevBoost > 0.55 && this.lastThrottle > 0.5 && thrIn < 0.2;
       // Knallen im Schub (Anti-Lag): solange kaum Gas und genug Drehzahl
       this.alsPop = twoStep ? 1 : (alsOn && thrIn < 0.15 ? Math.min(1, (engRpm - 2400) / 3000 + 0.4) : 0);
-      const thr = this.revCut ? 0 : thrUse;
+      const thr = this.revCut ? 0 : thrUse * softCut;
       let Tdrive = 0;
       if (engaged) {
         const tq = torque(engRpm) * (1 + P.turbo * 0.45 * this.boost);
         Tdrive = thr * tq * gr * P.eff;
         // Motorbremse (Schubabschaltung), steigt mit der Drehzahl
-        if ((thr < 0.05 || this.revCut) && rpmWheel > P.idle * 1.3) Tdrive -= Math.sign(this.wr) * (28 + rpmWheel * 0.011) * Math.abs(gr) * (P.diesel ? 1.25 : 1) * (P.als ? 0.45 : 1) * (P.base.ebMul || 1);
+        if ((thrUse < 0.05 || this.revCut) && rpmWheel > P.idle * 1.3) Tdrive -= Math.sign(this.wr) * (28 + rpmWheel * 0.011) * Math.abs(gr) * (P.diesel ? 1.25 : 1) * (P.als ? 0.45 : 1) * (P.base.ebMul || 1);
       }
       if (twoStep) Tdrive = 0;
       const Ieff = P.iWheel + (engaged && rpmWheel > P.idle * 0.9 ? P.iEngine * gr * gr * P.eff : 0);
