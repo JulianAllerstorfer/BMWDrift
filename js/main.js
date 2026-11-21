@@ -9,7 +9,7 @@
 
   // ---------- Einstellungen ----------
   const TUNE_DEF = { power: 100, turbo: 0, finalPct: 100, weightPct: 100, brakePower: 100, brakeBias: 64, steerSpeed: 100, lock: 54, hbrake: 100, roll: 100, tires: 0, soot: 60, backfire: 100, pressF: 2.2, pressR: 2.2, lsd: 80, stabi: 55 };
-  const DEF = Object.assign({ tod: 'auto', fx: true, engines: {}, map: 'hakone', fuelOn: true, model: 'e46', rimSize: 1, letters: false, lipColor: 0, paint: 0, rimStyle: 0, rimColor: 0, drop: 6, camber: 5, track: 3, assist: 70, maxang: 58, auto: true, sound: true, volume: 100, smokeOn: true }, TUNE_DEF, E46.LOOK_DEF);
+  const DEF = Object.assign({ tod: 'auto', fx: true, engines: {}, map: 'hakone', fuelOn: true, model: 'e46', rimSize: 1, letters: false, lipColor: 0, paint: 0, rimStyle: 0, rimColor: 0, drop: 6, camber: 5, track: 3, assist: 70, maxang: 58, auto: true, sound: true, volume: 100, smokeOn: true, gfx: 'auto' }, TUNE_DEF, E46.LOOK_DEF);
   function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* egal */ } }
   function load(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
   const cfg = Object.assign({}, DEF, load('e46drift.cfg', {}));
@@ -48,6 +48,7 @@
     peds = makePeds();
     Net.myMap = cfg.map;
     garageScene = buildGarage();
+    applyGfx();
 
     if (!window.CAR_MODELS[cfg.model]) cfg.model = 'e46';
     smoke = new FX.Smoke(driveScene, 1400);
@@ -363,7 +364,12 @@
       b.addEventListener('click', () => { cfg.tod = m.id; save(); refreshUI(); });
       $('tods').appendChild(b);
     });
-    $('fxBtn').addEventListener('click', () => { cfg.fx = cfg.fx === false; post.enabled = cfg.fx; save(); refreshUI(); });
+    $('fxBtn').addEventListener('click', () => { cfg.fx = cfg.fx === false; post.enabled = cfg.fx && !post.direct; save(); refreshUI(); });
+    [{ id: 'auto', name: 'AUTO' }].concat(GFX).forEach(g => {
+      const b = document.createElement('button'); b.className = 'chip'; b.textContent = g.name; b.dataset.id = g.id;
+      b.addEventListener('click', () => { cfg.gfx = g.id; if (g.id === 'auto') gfxAuto = weakDevice ? 1 : 0; applyGfx(); save(); refreshUI(); });
+      $('gfxs').appendChild(b);
+    });
     const rw = $('rims');
     E46.RIMS.forEach((r, i) => {
       const b = document.createElement('button'); b.className = 'chip'; b.textContent = r.name;
@@ -745,6 +751,7 @@
     for (const id of ['volume', 'pVolume']) { $(id).value = cfg.volume; $(id + 'V').textContent = cfg.sound ? cfg.volume + ' %' : 'AUS'; }
     $('smokeBtn').textContent = cfg.smokeOn ? 'AN' : 'AUS';
     $('fxBtn').textContent = cfg.fx === false ? 'AUS' : 'AN';
+    document.querySelectorAll('#gfxs .chip').forEach(d => d.classList.toggle('active', d.dataset.id === (cfg.gfx || 'auto')));
     document.querySelectorAll('#tods .chip').forEach(d => d.classList.toggle('active', d.dataset.id === (cfg.tod || 'auto')));
     document.querySelectorAll('#finishes .chip').forEach((d, i) => {
       const own = Prog.hasFinish(i), F = Prog.FINISH[i];
@@ -1738,6 +1745,48 @@
     peds = makePeds();
     Net.myMap = id; fuel = 1; miniStatic = null;
     skids.clear(); smoke.clear();
+    applyGfx();
+  }
+  // ---- Grafikqualität: AUTO / HOCH / MITTEL / NIEDRIG ----
+  // Auflösung (Pixelverhältnis), Schatten, Kantenglättung und Bildeffekte; AUTO misst die Bildrate und schaltet selbst runter
+  const GFX = [
+    { id: 'high', name: 'HOCH', pr: 2, shadow: 2048, soft: true, samples: 4 },
+    { id: 'mid', name: 'MITTEL', pr: 1.25, shadow: 1024, soft: false, samples: 2 },
+    { id: 'low', name: 'NIEDRIG', pr: 0.8, shadow: 0, soft: false, samples: 0, direct: true }
+  ];
+  const weakDevice = ('ontouchstart' in window || navigator.maxTouchPoints > 0) || (navigator.hardwareConcurrency || 8) <= 4;
+  let gfxAuto = weakDevice ? 1 : 0;                 // AUTO: aktuelle Stufe (Index in GFX)
+  const fpsMon = { t: 0, n: 0, slow: 0 };
+  function gfxLevel() { const i = GFX.findIndex(g => g.id === cfg.gfx); return i >= 0 ? i : gfxAuto; }
+  function applyGfx() {
+    if (!renderer) return;
+    const g = GFX[gfxLevel()];
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, g.pr));
+    renderer.setSize(innerWidth, innerHeight);
+    const type = g.soft ? T.PCFSoftShadowMap : T.PCFShadowMap, typeChanged = renderer.shadowMap.type !== type;
+    renderer.shadowMap.type = type;
+    post.direct = !!g.direct; post.enabled = cfg.fx !== false && !g.direct; post.setSamples(g.samples);
+    for (const sc of [driveScene, garageScene]) {
+      if (!sc) continue;
+      sc.traverse(o => {
+        if (o.isLight && o.shadow) {
+          if (o.userData.shadowOrig == null) o.userData.shadowOrig = o.castShadow;
+          o.castShadow = o.userData.shadowOrig && g.shadow > 0;
+          if (g.shadow && o.shadow.mapSize.x !== g.shadow) { o.shadow.mapSize.set(g.shadow, g.shadow); if (o.shadow.map) { o.shadow.map.dispose(); o.shadow.map = null; } }
+        }
+        if (typeChanged && o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.needsUpdate = true);
+      });
+    }
+    fpsMon.t = 0; fpsMon.n = 0; fpsMon.slow = 0;
+  }
+  // AUTO: läuft das Spiel länger unter ~40 Bildern/s, eine Stufe runter
+  function gfxWatch(dt) {
+    if (cfg.gfx !== 'auto' || gfxAuto >= GFX.length - 1 || document.hidden) return;
+    fpsMon.t += dt; fpsMon.n++;
+    if (fpsMon.t < 2) return;
+    const fps = fpsMon.n / fpsMon.t; fpsMon.t = 0; fpsMon.n = 0;
+    fpsMon.slow = fps < 40 ? fpsMon.slow + 1 : 0;
+    if (fpsMon.slow >= 2) { gfxAuto++; applyGfx(); popup('GRAFIK ' + GFX[gfxAuto].name, 'automatisch angepasst, damit es flüssiger läuft', false); }
   }
   // Fußgänger am Zebrastreifen (Großer Ring): wer einen erwischt, kassiert die Prämie
   const PED_BOUNTY = 200;
@@ -2740,7 +2789,7 @@
     padMenu(dt);
     wheelFrame(dt);
     if (mode === 'garage') { updateGarage(dt); post.bloom = 0.3; post.threshold = 0.9; draw(garageScene); }
-    else if (mode === 'drive') { camera.clearViewOffset(); updateDrive(dt); draw(driveScene); }
+    else if (mode === 'drive') { camera.clearViewOffset(); updateDrive(dt); draw(driveScene); gfxWatch(dt); }
     if (padWorkshop) { padWorkshop = false; if (mode === 'drive') toWorkshop(); }
     else if (mode === 'pause') { netUpdate(dt); updateWorld(dt, phys.x, phys.z, phys.groundY); draw(driveScene); }
     remoteAudio();
@@ -2748,6 +2797,7 @@
     if (mode === 'spectate') { camera.clearViewOffset(); netUpdate(dt); smoke.update(dt); skids.update(); updateSpectate(dt); updateWorld(dt, camera.position.x, camera.position.z, (spec.target && spec.target.cur && spec.target.cur.gy) || 0); drawMini(true); draw(driveScene); }
   }
   function onResize() {
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, GFX[gfxLevel()].pr));
     renderer.setSize(innerWidth, innerHeight);
     camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   }

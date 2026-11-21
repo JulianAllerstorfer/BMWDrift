@@ -331,6 +331,7 @@ body.touch .clock { right: 76px; top: 226px; }
   body.touch { --tb: 60px; }
   #touch .tl { left: 12px; bottom: 12px; gap: 10px; }
   #touch .tr { right: 12px; bottom: 12px; gap: 8px; }
+  .tacho { transform: scale(0.5); transform-origin: bottom right; right: 8px; bottom: 8px; }
   body.touch .tacho { bottom: calc(var(--tb) * 2 + 26px); right: 6px; transform: scale(0.46); }
   .score-top { left: 10px; top: 8px; gap: 10px; transform: scale(0.62); transform-origin: 0 0; }
   .board { left: 10px; top: 54px; transform: skewX(-8deg) scale(0.66); transform-origin: 0 0; max-height: 46vh; overflow: hidden; }

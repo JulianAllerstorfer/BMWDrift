@@ -61,9 +61,13 @@
       mix.uniforms.aspect.value = w / h;
     }
     const api = {
-      enabled: true, bloom: 0.4, threshold: 0.8,
+      enabled: true, bloom: 0.4, threshold: 0.8, direct: false,
       resize,
+      // Kantenglättung (MSAA-Stufen) des Zwischenbilds; 0 = aus
+      setSamples(n) { if (!renderer.capabilities.isWebGL2 || main.samples === n) return; main.samples = n; main.dispose(); },
       render(sc, camera) {
+        // Grafik NIEDRIG: direkt auf den Bildschirm, kein Zwischenbild, keine Effekte (am schnellsten)
+        if (api.direct) { renderer.setRenderTarget(null); renderer.render(sc, camera); return; }
         resize();
         renderer.setRenderTarget(main); renderer.render(sc, camera);
         const auto = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = false;
