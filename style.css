@@ -321,6 +321,10 @@ body.touch { --tb: 84px; }
 #touch button:active { filter: brightness(1.4); transform: scale(0.96); }
 body.touch .tacho { bottom: calc(var(--tb) * 2 + 40px); right: 12px; transform: scale(0.7); transform-origin: bottom right; }
 body.touch .controls-card, body.touch .chathint { display: none !important; }
+#touch .gar { position: absolute; right: 12px; top: 10px; width: 54px; height: 54px; border-radius: 14px; background: rgba(16, 18, 24, 0.72); font-size: 22px; line-height: 1; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+#touch .gar small { font: 900 8px var(--heavy); letter-spacing: 0.5px; color: var(--yellow); }
+body.touch .mini { right: 76px; }
+body.touch .clock { right: 76px; top: 226px; }
 
 /* Kleine Bildschirme (Handy): alles kompakter */
 @media (max-width: 900px), (max-height: 520px) {
@@ -349,6 +353,10 @@ body.touch .controls-card, body.touch .chathint { display: none !important; }
   .camlabel { left: 50%; bottom: auto; top: 30%; transform: translateX(-50%); }
   .spechud { min-width: 0; transform: translateX(-50%) skewX(-8deg) scale(0.75); transform-origin: 50% 100%; bottom: 10px; }
   #pipBox { max-width: 40vw; }
+  #touch .gar { right: 8px; top: 8px; width: 44px; height: 44px; border-radius: 12px; font-size: 18px; }
+  #touch .gar small { font-size: 7px; }
+  body.touch .mini { right: 60px; }
+  body.touch .clock { right: 160px; top: 12px; }
   body.touch .giveup { right: auto; left: 12px; bottom: calc(var(--tb, 60px) + 30px); padding: 8px 14px; font-size: 14px; }
 
   /* Garage: FAHREN immer sichtbar unten im Panel */
@@ -387,6 +395,7 @@ body.touch .controls-card, body.touch .chathint { display: none !important; }
   .logo-sub { font-size: 11px; letter-spacing: 2px; }
   .panel { left: 8px; right: 8px; bottom: 8px; top: auto; max-height: 58vh; }
   .clock { right: 10px; top: 104px; width: 92px; text-align: center; }
+  body.touch .clock { right: 60px; top: 104px; }
   .chain { top: 120px; }
   .fuel { bottom: calc(var(--tb, 60px) + 24px); }
   .chat { bottom: calc(var(--tb, 60px) * 2 + 40px); width: 60vw; }

@@ -545,7 +545,9 @@
     if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
       $('touch').classList.remove('hidden');
       document.body.classList.add('touch');   // Handy/Tablet-Layout (style.css)
-      document.querySelectorAll('#touch button').forEach(b => {
+      // Garage-Knopf (Ecke oben rechts): direkt zurück in die Garage
+      $('touchGarage').addEventListener('click', e => { e.preventDefault(); if (mode !== 'garage') { setPause(false); enterGarage(); } });
+      document.querySelectorAll('#touch button[data-k]').forEach(b => {
         const k = b.dataset.k;
         b.addEventListener('touchstart', e => { e.preventDefault(); touch[k] = true; });
         b.addEventListener('touchend', e => { e.preventDefault(); touch[k] = false; });
