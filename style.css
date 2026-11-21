@@ -162,7 +162,6 @@ kbd { display: inline-block; min-width: 22px; text-align: center; background: #e
   .panel { left: 12px; right: 12px; width: auto; top: auto; bottom: 12px; }
   .controls-card, .drag-hint { display: none; }
   .tacho { transform: scale(0.7); transform-origin: bottom right; }
-  #touch .tr { right: 200px; }
 }
 body.shot-noui > *:not(#app) { display: none !important; }
 
@@ -308,3 +307,87 @@ input[type=range]:disabled { opacity: 0.35; }
 .giveup:hover { background: #ff5a5a; }
 @keyframes giveupPulse { 50% { transform: skewX(-8deg) scale(1.06); } }
 @media (max-width: 820px) { .giveup { bottom: 200px; right: 16px; } }
+
+/* ================= Handy & Tablet (Touch) =================
+   body.touch wird in main.js gesetzt, sobald ein Touchscreen erkannt wird.
+   Lenken links unten, Pedale rechts unten (GAS hoch und ganz außen), Tacho darüber. */
+body.touch { --tb: 84px; }
+#touch .tl { left: 16px; bottom: 16px; display: flex; gap: 12px; }
+#touch .tr { right: 16px; bottom: 16px; display: grid; gap: 10px; grid-template-columns: var(--tb, 86px) calc(var(--tb, 86px) + 10px); grid-template-areas: "hb gas" "brake gas"; }
+#touch button { width: var(--tb, 86px); height: var(--tb, 86px); margin: 0; font-size: calc(var(--tb, 86px) * 0.2); -webkit-tap-highlight-color: transparent; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3); }
+#touch .hb { grid-area: hb; }
+#touch [data-k=brake] { grid-area: brake; background: rgba(255, 80, 80, 0.32); font-size: calc(var(--tb, 86px) * 0.16); letter-spacing: -0.5px; }
+#touch .gas { grid-area: gas; width: calc(var(--tb, 86px) + 10px); height: calc(var(--tb, 86px) * 2 + 10px); }
+#touch button:active { filter: brightness(1.4); transform: scale(0.96); }
+body.touch .tacho { bottom: calc(var(--tb) * 2 + 40px); right: 12px; transform: scale(0.7); transform-origin: bottom right; }
+body.touch .controls-card, body.touch .chathint { display: none !important; }
+
+/* Kleine Bildschirme (Handy): alles kompakter */
+@media (max-width: 900px), (max-height: 520px) {
+  body.touch { --tb: 60px; }
+  #touch .tl { left: 12px; bottom: 12px; gap: 10px; }
+  #touch .tr { right: 12px; bottom: 12px; gap: 8px; }
+  body.touch .tacho { bottom: calc(var(--tb) * 2 + 26px); right: 6px; transform: scale(0.46); }
+  .score-top { left: 10px; top: 8px; gap: 10px; transform: scale(0.62); transform-origin: 0 0; }
+  .board { left: 10px; top: 54px; transform: skewX(-8deg) scale(0.66); transform-origin: 0 0; max-height: 46vh; overflow: hidden; }
+  .mini { right: 10px; top: 8px; width: 92px; height: 92px; border-radius: 10px; }
+  .clock { right: 110px; top: 12px; width: auto; font-size: 12px; }
+  .chain { top: 6px; transform: translateX(-50%) scale(0.6); transform-origin: 50% 0; }
+  .chalhud { top: auto; bottom: calc(var(--tb, 60px) + 26px); transform: translateX(-50%) skewX(-8deg) scale(0.75); transform-origin: 50% 100%; min-width: 220px; }
+  .pop { font-size: 26px; -webkit-text-stroke: 2px var(--ink); }
+  .pop small { font-size: 15px; }
+  .pop.lvl { font-size: 30px; }
+  #popups { top: 30%; }
+  .shout { font-size: 17px; padding: 8px 16px; top: 26%; }
+  .tires { display: none; }
+  .fuel, .cig { right: auto; left: 12px; width: 130px; }
+  .fuel { bottom: calc(var(--tb, 60px) + 24px); }
+  .cig { bottom: calc(var(--tb, 60px) + 64px); }
+  .chat { left: 10px; bottom: calc(var(--tb, 60px) + 110px); width: min(300px, 46vw); }
+  .chatlist { max-height: 76px; }
+  .chat .cm { font-size: 11px; }
+  .camlabel { left: 50%; bottom: auto; top: 30%; transform: translateX(-50%); }
+  .spechud { min-width: 0; transform: translateX(-50%) skewX(-8deg) scale(0.75); transform-origin: 50% 100%; bottom: 10px; }
+  #pipBox { max-width: 40vw; }
+  body.touch .giveup { right: auto; left: 12px; bottom: calc(var(--tb, 60px) + 30px); padding: 8px 14px; font-size: 14px; }
+
+  /* Garage: FAHREN immer sichtbar unten im Panel */
+  .panel .go { position: sticky; bottom: 0; z-index: 3; margin-top: 12px; padding: 11px; font-size: 18px; }
+  .panel { padding: 12px; }
+  .tabs { margin-bottom: 10px; }
+  .tab { padding: 8px 2px; font-size: 10px !important; letter-spacing: 0 !important; }
+  .slider { grid-template-columns: 1fr 110px 46px; margin: 10px 0; font-size: 12px; }
+  .model { padding: 8px 10px; }
+  .model .mn { font-size: 15px; }
+  .model .ms { font-size: 11px; }
+  .pbox, #chalDone .pbox { max-height: calc(100vh - 20px); overflow-y: auto; }
+}
+
+/* Handy quer */
+@media (max-height: 520px) {
+  .logo { left: auto; right: 16px; top: 10px; text-align: right; }
+  .logo-main { font-size: 30px; -webkit-text-stroke: 2px var(--ink); text-shadow: 3px 3px 0 var(--ink); }
+  .logo-sub { font-size: 10px; letter-spacing: 2px; padding: 3px 8px; }
+  .logo-sub::after { width: 24px; height: 4px; }
+  .panel { left: 10px; top: 10px; bottom: 10px; right: auto; width: min(400px, 50vw); max-height: none; }
+  .prog { padding: 5px 8px; margin-bottom: 8px; }
+  .plv b { font-size: 20px; }
+  .drag-hint { display: block; left: auto; right: 16px; transform: none; bottom: 12px; font-size: 11px; }
+  .pbox { padding: 14px 18px; }
+  .ptitle { font-size: 30px; }
+  .pbox .go { margin-top: 10px; padding: 9px; font-size: 18px; }
+  .pbox .sec { margin-top: 7px; padding: 8px; font-size: 13px; }
+  .chres b { font-size: 38px; }
+}
+
+/* Handy hoch */
+@media (max-width: 600px) and (min-height: 521px) {
+  .logo { left: 16px; top: 14px; }
+  .logo-main { font-size: 34px; -webkit-text-stroke: 2px var(--ink); text-shadow: 3px 3px 0 var(--ink); }
+  .logo-sub { font-size: 11px; letter-spacing: 2px; }
+  .panel { left: 8px; right: 8px; bottom: 8px; top: auto; max-height: 58vh; }
+  .clock { right: 10px; top: 104px; width: 92px; text-align: center; }
+  .chain { top: 120px; }
+  .fuel { bottom: calc(var(--tb, 60px) + 24px); }
+  .chat { bottom: calc(var(--tb, 60px) * 2 + 40px); width: 60vw; }
+}

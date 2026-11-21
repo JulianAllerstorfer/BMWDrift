@@ -544,6 +544,7 @@
     // Touch-Steuerung
     if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
       $('touch').classList.remove('hidden');
+      document.body.classList.add('touch');   // Handy/Tablet-Layout (style.css)
       document.querySelectorAll('#touch button').forEach(b => {
         const k = b.dataset.k;
         b.addEventListener('touchstart', e => { e.preventDefault(); touch[k] = true; });
