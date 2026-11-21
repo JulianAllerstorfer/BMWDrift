@@ -135,8 +135,9 @@
     // Rennreifen: sehr viel Grip, hinten mehr als vorne (Heck bleibt stabil), späterer Haftabriss,
     // und nach dem Abriss bleiben ~95 % Grip -> kaum Rutschen, zum Rennenfahren statt Driften
     { name: 'Rennreifen', muF: 1.6, muR: 1.75, slide: 0.95, heat: 0.6, spMul: 1.3 },
-    // Klebereifen: 100 % Grip – nach dem Haftmaximum fällt die Kraft gar nicht mehr ab, nichts rutscht weg
-    { name: 'Klebereifen', muF: 1.9, muR: 2.1, slide: 1.0, heat: 0.4, spMul: 1.5 }
+    // Klebereifen: kleben wie der Rollator – Kleber-Modus (fährt wie auf Schienen, Heck rutscht nie weg),
+    // die Handbremse bleibt aber aktiv (bremst über die blockierte Hinterachse, ohne dass das Heck ausbricht)
+    { name: 'Klebereifen', muF: 3.0, muR: 3.5, slide: 1.0, heat: 0.4, spMul: 1.5, glue: true, glueG: 4.5 }
   ];
 
   const P = {};
@@ -171,7 +172,6 @@
     P.final = m.final * k(t.finalPct, 100) / 100;
     P.mass = m.mass * k(t.weightPct, 100) / 100;
     P.iz = 0.95 * P.mass * P.a * P.b * (P.base.izMul || 1);
-    P.glue = !!m.glue; P.glueG = m.glueG || 0;
     P.brake = 11000 * P.mass / 1420 * k(t.brakePower, 100) / 100;
     P.brakeBias = k(t.brakeBias, 64) / 100;
     P.lock = k(t.lock, 54) * Math.PI / 180;
@@ -181,6 +181,7 @@
     if (m.muRMul) P.muR *= m.muRMul;                              // fahrzeugeigene Drift-Abstimmung
     if (m.slideMin) P.slide = Math.max(P.slide, m.slideMin);
     P.hbTorque = 3200 * k(t.hbrake, 100) / 100;
+    P.glue = !!m.glue || !!ti.glue; P.glueG = Math.max(m.glueG || 0, ti.glueG || 0);
     if (m.glue) {                                                  // Kleber-Fahrwerk: mehr Grip als Klebereifen, hinten noch mehr (kein Übersteuern),
       P.muF = Math.max(P.muF, 3.0); P.muR = Math.max(P.muR, 3.5);  // nach dem Haftmaximum kein Abfall, Handbremse ohne Wirkung
       P.slide = 1.0; P.heat = Math.min(P.heat, 0.4); P.spMul = Math.max(P.spMul, 1.5); P.hbTorque = 0;
