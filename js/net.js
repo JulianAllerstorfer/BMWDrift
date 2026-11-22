@@ -125,6 +125,7 @@
         setTimeout(() => location.reload(), 1200);
       } break;
       case 'jumpscare': if (window.Jumpscare) window.Jumpscare.play(); break;
+      case 'jumpscare2': if (window.Jumpscare && window.Jumpscare.play2) window.Jumpscare.play2(); break;
       case 'flip': if (Net.onFlip) Net.onFlip(); break;
       // Admin übernimmt das Steuer: seine Eingaben ersetzen deine (siehe main.js readInput)
       case 'ctl': Net.ctl = m.on ? { s: 0, g: 0, b: 0, h: 0, at: 0, up: false, down: false } : null; if (Net.onCtl) Net.onCtl(!!m.on); break;

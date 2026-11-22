@@ -119,6 +119,154 @@
     })(start);
   }
 
+  // ---------- Jumpscare 2 ("viel ärger"): Spannungsaufbau, Stille, dann Totalausfall (~8 s) ----------
+
+  // Gruseliger Aufbau: tiefes Dröhnen, immer schneller werdender Herzschlag, Flüstern
+  function dread(ctx, out, t0, dur) {
+    // Drone: zwei verstimmte tiefe Sägezähne durch Tiefpass, wird lauter
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(120, t0); lp.frequency.linearRampToValueAtTime(600, t0 + dur);
+    const dg = ctx.createGain(); dg.gain.setValueAtTime(0, t0); dg.gain.linearRampToValueAtTime(0.35, t0 + dur - 0.05); dg.gain.linearRampToValueAtTime(0, t0 + dur);
+    lp.connect(dg); dg.connect(out);
+    for (const f of [41, 43.3, 61.7]) {
+      const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t0); o.frequency.linearRampToValueAtTime(f * 1.5, t0 + dur);
+      o.connect(lp); o.start(t0); o.stop(t0 + dur);
+    }
+    // Herzschlag: Abstand schrumpft von 0,9 s auf 0,25 s
+    let t = t0 + 0.2, gap = 0.9;
+    while (t < t0 + dur - 0.1) {
+      for (const [dt, v] of [[0, 1], [0.16, 0.7]]) {
+        const k = ctx.createOscillator(), kg = ctx.createGain(); k.type = 'sine';
+        k.frequency.setValueAtTime(70, t + dt); k.frequency.exponentialRampToValueAtTime(30, t + dt + 0.18);
+        kg.gain.setValueAtTime(0.0001, t + dt); kg.gain.exponentialRampToValueAtTime(0.9 * v, t + dt + 0.01); kg.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.22);
+        k.connect(kg); kg.connect(out); k.start(t + dt); k.stop(t + dt + 0.25);
+      }
+      t += gap; gap = Math.max(0.25, gap * 0.8);
+    }
+    // Flüstern: gefiltertes Rauschen, das an- und abschwillt
+    const nb = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate), d = nb.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const ns = ctx.createBufferSource(); ns.buffer = nb;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2600; bp.Q.value = 3;
+    const wg = ctx.createGain(); wg.gain.value = 0;
+    const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 3.3; lg.gain.value = 0.12;
+    lfo.connect(lg); lg.connect(wg.gain);
+    ns.connect(bp); bp.connect(wg); wg.connect(out); ns.start(t0); lfo.start(t0); lfo.stop(t0 + dur);
+  }
+
+  // Der eigentliche Knall: mehr Stimmen, tiefer + höher, härter verzerrt, länger
+  function scream2(ctx, out, t0, dur) {
+    const shaper = ctx.createWaveShaper(), curve = new Float32Array(2048);
+    for (let i = 0; i < 2048; i++) { const x = i / 1024 - 1; curve[i] = Math.tanh(x * 14); }
+    shaper.curve = curve; shaper.connect(out);
+    const voices = [[180, 0], [310, 7], [620, 0], [930, 12], [1240, -9], [1870, 15], [470, 5], [2600, -20]];
+    for (const [f, det] of voices) {
+      const o = ctx.createOscillator(); o.type = Math.random() < 0.5 ? 'sawtooth' : 'square'; o.detune.value = det;
+      o.frequency.setValueAtTime(f * 0.5, t0); o.frequency.exponentialRampToValueAtTime(f * 1.4, t0 + 0.18);
+      o.frequency.exponentialRampToValueAtTime(f * 0.9, t0 + dur * 0.6); o.frequency.exponentialRampToValueAtTime(f * 1.6, t0 + dur);
+      const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 6 + Math.random() * 14; lg.gain.value = f * 0.1;
+      lfo.connect(lg); lg.connect(o.frequency);
+      const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f * 2; bp.Q.value = 0.7;
+      const g = ctx.createGain(); g.gain.value = 0.18;
+      o.connect(bp); bp.connect(g); g.connect(shaper);
+      o.start(t0); lfo.start(t0); o.stop(t0 + dur); lfo.stop(t0 + dur);
+    }
+    // Rauschwand
+    const nb = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate), d = nb.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (i < ctx.sampleRate * 0.35 ? 1 : 0.5);
+    const ns = ctx.createBufferSource(); ns.buffer = nb;
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900;
+    const ng = ctx.createGain(); ng.gain.value = 0.6;
+    ns.connect(hp); hp.connect(ng); ng.connect(shaper); ns.start(t0);
+    // Mehrere tiefe Schläge
+    for (const dt of [0, 0.45, 0.9, 1.6, 2.4]) {
+      const k = ctx.createOscillator(), kg = ctx.createGain(); k.type = 'sine';
+      k.frequency.setValueAtTime(140, t0 + dt); k.frequency.exponentialRampToValueAtTime(28, t0 + dt + 0.6);
+      kg.gain.setValueAtTime(1.2, t0 + dt); kg.gain.exponentialRampToValueAtTime(0.001, t0 + dt + 0.7);
+      k.connect(kg); kg.connect(out); k.start(t0 + dt); k.stop(t0 + dt + 0.7);
+    }
+  }
+
+  function audio2(buildDur, gapDur, hitDur) {
+    const S = window.Sound;
+    let ctx = S && S.ctx;
+    try { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+    if (ctx.state === 'suspended') ctx.resume();
+    const t0 = ctx.currentTime, tHit = t0 + buildDur + gapDur;
+    const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -4; comp.ratio.value = 12; comp.connect(ctx.destination);
+    const out = ctx.createGain(); out.connect(comp);
+    out.gain.setValueAtTime(1, t0);
+    out.gain.setValueAtTime(1, tHit + hitDur - 0.5); out.gain.linearRampToValueAtTime(0, tHit + hitDur);
+    dread(ctx, out, t0, buildDur);
+    scream2(ctx, out, tHit, hitDur);
+    const total = buildDur + gapDur + hitDur;
+    if (S && S.setDuck) { S.setDuck(0.0); setTimeout(() => S.setDuck(1), total * 1000); }
+  }
+
+  // Zerhackt das Bild in horizontale Streifen und verschiebt sie (Glitch)
+  function glitch(c, amount) {
+    const g = c.getContext('2d'), W = c.width, H = c.height;
+    const n = 3 + Math.floor(Math.random() * 6 * amount);
+    for (let i = 0; i < n; i++) {
+      const y = Math.random() * H, h = 4 + Math.random() * H * 0.08, dx = (Math.random() - 0.5) * W * 0.25 * amount;
+      try { g.drawImage(c, 0, y, W, h, dx, y, W, h); } catch (e) { /* */ }
+    }
+  }
+
+  let busy2 = false;
+  function play2() {
+    if (busy2 || busy) return; busy2 = true;
+    const BUILD = 4.2, GAP = 0.6, HIT = 3.6, total = (BUILD + GAP + HIT) * 1000;
+    const host = document.fullscreenElement || document.body;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:2147483647;pointer-events:all;overflow:hidden;background:rgba(0,0,0,0)';
+    const c = document.createElement('canvas');
+    c.width = innerWidth; c.height = innerHeight;
+    c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0';
+    const msg = document.createElement('div');
+    msg.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#b00000;font:900 clamp(28px,7vw,120px)/1.1 Georgia,serif;text-align:center;opacity:0;text-shadow:0 0 18px #f00;letter-spacing:.06em;padding:5vw;box-sizing:border-box';
+    const flash = document.createElement('div');
+    flash.style.cssText = 'position:absolute;inset:0;background:#fff;mix-blend-mode:difference;opacity:0';
+    const red = document.createElement('div');
+    red.style.cssText = 'position:absolute;inset:0;background:#f00;mix-blend-mode:multiply;opacity:0';
+    wrap.append(c, red, msg, flash); host.appendChild(wrap);
+    try { audio2(BUILD, GAP, HIT); } catch (e) { /* kein Ton */ }
+    const lines = ['du bist nicht allein', 'dreh dich nicht um', 'ER SITZT HINTER DIR'];
+    const start = performance.now();
+    let vibed = false;
+    (function frame(now) {
+      const t = (now - start) / 1000;
+      if (t < BUILD) {
+        // Bild wird dunkler, rote Vignette, flackernde Sätze
+        const k = t / BUILD;
+        wrap.style.background = `radial-gradient(ellipse at center, rgba(0,0,0,${0.35 + k * 0.5}) 0%, rgba(40,0,0,${0.6 + k * 0.4}) 100%)`;
+        const li = Math.min(lines.length - 1, Math.floor(k * lines.length));
+        msg.textContent = lines[li];
+        msg.style.opacity = Math.random() < 0.08 + k * 0.2 ? 0 : (0.25 + k * 0.75);
+        msg.style.transform = `translate(${(Math.random() - 0.5) * 8 * k}px,${(Math.random() - 0.5) * 8 * k}px) scale(${1 + k * 0.25})`;
+        // kurze unterschwellige Gesichtsblitze gegen Ende
+        if (k > 0.55 && Math.random() < 0.04) { c.style.opacity = 0.5; drawFace(c, 0); } else c.style.opacity = 0;
+      } else if (t < BUILD + GAP) {
+        // totale Stille + Schwarz
+        wrap.style.background = '#000'; msg.style.opacity = 0; c.style.opacity = 0;
+      } else {
+        const h = t - BUILD - GAP, k = Math.max(0, 1 - h / HIT);
+        if (!vibed) { vibed = true; if (navigator.vibrate) try { navigator.vibrate([600, 60, 600, 60, 900, 60, 900]); } catch (e) { /* */ } }
+        c.style.opacity = 1;
+        drawFace(c, h * 2.2);           // rast viel schneller auf dich zu
+        glitch(c, 0.5 + k);
+        // ab und zu erscheint der Text noch mal riesig mitten im Schrei
+        if (Math.random() < 0.1) { msg.textContent = 'ER SITZT HINTER DIR'; msg.style.opacity = 1; msg.style.color = '#fff'; } else msg.style.opacity = 0;
+        const sh = 70 * k;
+        c.style.transform = `translate(${(Math.random() - 0.5) * sh}px,${(Math.random() - 0.5) * sh}px) rotate(${(Math.random() - 0.5) * 8 * k}deg) scale(${1 + Math.random() * 0.15})`;
+        red.style.opacity = Math.random() < 0.35 ? 0.85 : 0;
+        flash.style.opacity = h < 0.1 || Math.random() < 0.15 ? 1 : 0;
+        wrap.style.filter = Math.random() < 0.18 ? 'invert(1) hue-rotate(180deg) contrast(2)' : (Math.random() < 0.15 ? 'contrast(3) saturate(3)' : '');
+      }
+      if (now - start < total) requestAnimationFrame(frame);
+      else { wrap.remove(); busy2 = false; }
+    })(start);
+  }
+
   // Schwarzbild vom Admin: Vollbild schwarz mit weißem Text (~4 s)
   let textBusy = false;
   function text(msg, dur = 4000) {
@@ -133,5 +281,5 @@
     setTimeout(() => { wrap.remove(); textBusy = false; }, dur);
   }
 
-  window.Jumpscare = { play, text };
+  window.Jumpscare = { play, play2, text };
 })();
