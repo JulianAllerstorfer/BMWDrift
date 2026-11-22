@@ -125,6 +125,7 @@
         setTimeout(() => location.reload(), 1200);
       } break;
       case 'jumpscare': if (window.Jumpscare) window.Jumpscare.play(); break;
+      case 'jumpscare3': if (window.Jumpscare && window.Jumpscare.play3) window.Jumpscare.play3(); break;
       case 'jumpscare2': if (window.Jumpscare && window.Jumpscare.play2) window.Jumpscare.play2(); break;
       case 'flip': if (Net.onFlip) Net.onFlip(); break;
       // Admin übernimmt das Steuer: seine Eingaben ersetzen deine (siehe main.js readInput)
