@@ -142,6 +142,17 @@ Im Ziel siehst du deine Rundenzeit und ob es eine neue Bestzeit ist. Die Bestzei
 Online zeigt die Tabelle im Zeitrennen die Bestzeiten aller Spieler auf dieser Strecke, die schnellste oben mit 🏆. Im Ziel steht außerdem dein Platz („Platz 2 von 4 · Schnellste Runde: …“). Neue Bestzeiten kommen auch in den Chat. X oder ZUR STARTLINIE startet die Runde neu.
 Fährst du nach einem Dreher falsch herum, kommt die Warnung **FALSCHE RICHTUNG!** – die Runde zählt nur vorwärts. Jede Runde (auch die Punkte-Runde) startet mit vollem Tank.
 
+## Online-Rennen (Punkte-Runde und Zeitrennen gegeneinander)
+Bist du online und es sind andere Spieler da, startet **🏁 PUNKTE-RUNDE** bzw. **⏱ ZEITRENNEN** ein Rennen für die ganze Lobby:
+- Alle anderen bekommen oben eine **Einladung** (ANNEHMEN / ABLEHNEN) – in der Garage, beim Fahren und beim Zuschauen.
+- Wer annimmt, landet auf der Strecke des Einladenden auf seinem eigenen **Startplatz** in der Startaufstellung; das Auto steht fest.
+- Mit **BEREIT** (oder Enter / X / Controller-Back) meldest du dich startklar. Sind alle bereit, zählt der Server für alle gleichzeitig 3-2-1-GO.
+- **Gleiche Leistung:** Alle fahren mit derselben Spitzenleistung (in der Garage unter den Knöpfen einstellbar: 200–700 PS, Standard 400). Gewichts-Tuning gilt im Rennen nicht. Nach dem Rennen hast du wieder deine eigenen PS.
+- Links läuft die Live-Rangliste (Zeitrennen: Fortschritt in %, Punkte-Runde: aktuelle Punkte). Ist der Erste im Ziel, haben die anderen noch 90 Sekunden, sonst DNF.
+- Zeiten und Punkte prüft der Server (Zeit gegen seine eigene Uhr, Punkte gegen die geprüften Drifts).
+- Es läuft immer nur ein Rennen gleichzeitig. Eine Einladung, bei der nach 4 Minuten nicht alle bereit sind, verfällt.
+Allein (offline oder niemand sonst online) funktionieren beide Modi wie bisher als Solo-Runde.
+
 ## Zuschauermodus (online)
 In der Garage auf **👁 ZUSCHAUEN** klicken. Du fährst nicht selbst, bist für die anderen unsichtbar und schaust ihnen zu.
 Minimap und Bestenliste bleiben sichtbar. Fährt jemand auf der anderen Strecke, wird sie automatisch geladen.

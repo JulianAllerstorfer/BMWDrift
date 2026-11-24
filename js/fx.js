@@ -27,7 +27,10 @@
         vertexShader: `attribute float size; attribute float alpha; attribute vec3 shade; uniform float scale;
           varying float vA; varying vec3 vS; varying float vRot;
           void main(){ vec4 mv = modelViewMatrix * vec4(position,1.0); gl_Position = projectionMatrix * mv;
-            gl_PointSize = size * scale / -mv.z; vA = alpha; vS = shade; vRot = position.x * 3.1 + position.z * 1.7; }`,
+            float dz = -mv.z;
+            // Qualm direkt vor der Kamera (Auto neben dir driftet): ausblenden und Größe begrenzen –
+            // bildschirmfüllende durchsichtige Punkte kosten auf schwächeren Grafikchips sehr viel Leistung
+            gl_PointSize = min(size * scale / dz, 320.0); vA = alpha * smoothstep(1.2, 4.5, dz); vS = shade; vRot = position.x * 3.1 + position.z * 1.7; }`,
         fragmentShader: `uniform vec3 tint; varying float vA; varying vec3 vS; varying float vRot;
           void main(){ vec2 p = gl_PointCoord - 0.5; float c = cos(vRot), s = sin(vRot); p = mat2(c,-s,s,c) * p;
             float r = length(p) * 2.0;

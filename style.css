@@ -402,3 +402,31 @@ body.touch .clock { right: 76px; top: 226px; }
   .fuel { bottom: calc(var(--tb, 60px) + 24px); }
   .chat { bottom: calc(var(--tb, 60px) * 2 + 40px); width: 60vw; }
 }
+
+/* ===== Online-Rennen: Einladung, Startaufstellung, Ergebnis ===== */
+.raceinv { position: fixed; left: 50%; top: 18px; transform: translateX(-50%) skewX(-6deg); z-index: 30; width: min(420px, calc(100vw - 32px)); background: linear-gradient(165deg, rgba(30, 34, 46, 0.95), rgba(12, 14, 20, 0.96)); border: 3px solid var(--yellow); border-radius: 14px; padding: 14px 18px; box-shadow: 0 18px 50px rgba(0,0,0,0.55), 6px 6px 0 rgba(0,0,0,0.4); color: #fff; text-align: center; animation: raceInvIn .35s ease-out; }
+@keyframes raceInvIn { from { opacity: 0; transform: translate(-50%, -20px) skewX(-6deg); } }
+.raceinv .ri-t { font: 900 18px var(--heavy); color: var(--yellow); letter-spacing: 1px; }
+.raceinv .ri-s { font: 700 13px var(--heavy); color: #cfd5e0; margin-top: 4px; }
+.raceinv .ri-b, .racelobby .rl-b { display: flex; gap: 10px; }
+.raceinv .ri-b button, .racelobby .rl-b button { margin-top: 12px; padding: 10px; font-size: 16px; }
+.racelobby { position: absolute; left: 50%; top: 190px; transform: translateX(-50%); width: min(380px, calc(100vw - 32px)); pointer-events: auto; z-index: 6; background: linear-gradient(165deg, rgba(30, 34, 46, 0.9), rgba(12, 14, 20, 0.92)); border: 2px solid rgba(0,0,0,0.7); border-radius: 14px; padding: 14px 18px; box-shadow: 0 12px 30px rgba(0,0,0,0.45); color: #fff; }
+.racelobby .rl-t { font: 900 16px var(--heavy); color: var(--yellow); letter-spacing: 1px; text-align: center; }
+.racelobby .rl-s { font: 700 12px var(--heavy); color: #aab3c2; text-align: center; margin-top: 2px; }
+.racelobby .rl-list { margin-top: 10px; max-height: 34vh; overflow-y: auto; }
+.rl-row { display: flex; align-items: center; gap: 8px; font: 900 14px var(--heavy); padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.rl-row i { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.rl-row small { font: 700 11px Arial, sans-serif; color: #aab3c2; }
+.rl-row b { margin-left: auto; font-size: 12px; color: #8a93a6; }
+.rl-row b.ok { color: #6fe38a; }
+.rl-row.me span { color: var(--yellow); }
+.racelobby .rl-h { font: 700 12px Arial, sans-serif; color: #cfd5e0; margin-top: 8px; text-align: center; line-height: 1.35; }
+.racelobby #raceReadyBtn.on { background: #6fe38a; }
+.raceres { margin-top: 10px; }
+.raceres .rr-h { font: 900 12px var(--heavy); letter-spacing: 1px; color: var(--yellow); margin-bottom: 4px; }
+.raceres .rl-row b { color: #fff; }
+.raceres .rl-row.win b { color: var(--yellow); }
+@media (max-width: 900px), (max-height: 520px) {
+  .racelobby { top: 50px; transform: translateX(-50%) scale(0.85); transform-origin: 50% 0; }
+  .raceinv { top: 8px; }
+}

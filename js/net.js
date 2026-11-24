@@ -1,18 +1,20 @@
 /* =====================================================================
    LAN-Multiplayer (Client): Verbindung, fremde Autos, Auto-zu-Auto-Kontakt
-   Jeder Spieler berechnet sein eigenes Auto, sendet den Zustand 20x/s;
-   fremde Autos werden mit ~120 ms Verzögerung weich interpoliert.
+   Jeder Spieler berechnet sein eigenes Auto, sendet den Zustand 20x/s mit Zeitstempel.
+   Fremde Autos: auf einer gleichmäßigen Zeitachse (Zeitstempel des Absenders, nicht Ankunftszeit)
+   interpoliert und dann um Puffer + Ping in die Gegenwart vorausgerechnet, damit sie dort sind,
+   wo sie wirklich gerade fahren (sonst hängt das Auto neben dir ein paar Meter hinterher und ruckelt).
    ===================================================================== */
 (function () {
   'use strict';
   const T = THREE;
-  const SEND_HZ = 20, DELAY = 0.12;
+  const SEND_HZ = 20, DELAY = 0.1, MAX_PRED = 0.35;
   const available = location.protocol === 'http:' || location.protocol === 'https:';
 
   const Net = {
     available, connected: false, myId: null, slot: 0, urls: [], status: available ? 'Verbinde …' : 'offline',
-    remotes: new Map(), onChange: null, onEvent: null, onChat: null,
-    _ws: null, _sendT: 0, _ctx: null, _retry: 0
+    remotes: new Map(), onChange: null, onEvent: null, onChat: null, onRace: null, race: null, rtt: 0.08,
+    _ws: null, _sendT: 0, _ctx: null, _retry: 0, _pingT: 0
   };
 
   function tagTexture(name, color) {
@@ -114,7 +116,11 @@
         for (const p of m.players) addRemote(p);
         if (m.rec && Net.onRec) Net.onRec(m.rec, false);
         if (Net.onChat) for (const c of m.chat || []) Net.onChat(Object.assign({ old: true }, c));
+        Net.race = m.race || null; if (Net.onRace) Net.onRace(Net.race);
         changed(); break;
+      case 'pong': if (m.c) { const r = (performance.now() - m.c) / 1000; if (r >= 0 && r < 3) Net.rtt += (Math.min(r, 0.6) - Net.rtt) * 0.25; } break;
+      case 'race': Net.race = m.race || null; if (Net.onRace) Net.onRace(Net.race); break;
+      case 'race_err': if (Net.onEvent) Net.onEvent(m.msg || 'Rennen nicht möglich'); break;
       case 'full': Net.status = 'Server voll (max. ' + m.max + ' Spieler)'; Net._full = true; changed(); break;
       case 'kicked': Net.status = 'Du wurdest vom Host entfernt'; Net._full = true; changed(); if (Net.onEvent) Net.onEvent('Vom Host gekickt'); break;
       case 'banned': Net.status = 'Du bist auf diesem Server gesperrt'; Net._full = true; changed(); if (Net.onEvent) Net.onEvent('Vom Host gesperrt'); break;
@@ -141,11 +147,20 @@
       case 'leave': { const r = Net.remotes.get(m.id); if (r && Net.onEvent) Net.onEvent(r.name + ' hat verlassen'); removeRemote(m.id); break; }
       case 's': {
         const r = Net.remotes.get(m.id); if (!r) break;
-        m.at = performance.now() / 1000;
+        const loc = performance.now();
+        if (m.ts != null) {
+          // Abstand Absender-Uhr -> eigene Uhr: schnellste Pakete zählen, langsam nachführen (gleicht Netz-Schwankungen aus)
+          const off = loc - m.ts;
+          if (r.off == null || Math.abs(off - r.off) > 1500) r.off = off;
+          else r.off += (off - r.off) * (off < r.off ? 0.3 : 0.02);
+          m.at = (m.ts + r.off) / 1000;
+        } else m.at = loc / 1000;                              // ältere Version ohne Zeitstempel
+        const last = r.snaps[r.snaps.length - 1];
+        if (last && m.at <= last.at) m.at = last.at + 0.001;
         r.snaps.push(m); if (r.snaps.length > 30) r.snaps.shift();
         r.away = false; break;
       }
-      case 'away': { const r = Net.remotes.get(m.id); if (r) { r.away = true; r.snaps.length = 0; } break; }
+      case 'away': { const r = Net.remotes.get(m.id); if (r) { r.away = true; r.snaps.length = 0; r.disp = null; } break; }
       case 'cfg': {
         if (pending.has(m.id)) { pending.get(m.id).cfg = m.cfg; break; }
         const r = Net.remotes.get(m.id); if (!r) break;
@@ -197,6 +212,12 @@
   Net.sendScore = function (total, drift, best, bestCar) { if (best != null) Net.myBest = best; if (bestCar) Net.myBestCar = bestCar; send({ t: 'score', total: Math.round(total), drift: Math.round(drift), best: Math.round(Net.myBest || 0), bestCar: Net.myBestCar || null }); };
   Net.sendAway = function () { send({ t: 'away' }); };
   Net.sendCtlState = function (mode) { send({ t: 'ctlstate', mode }); };
+  // Online-Rennen
+  Net.raceNew = function (kind, map, ps) { send({ t: 'race_new', kind, map, ps }); };
+  Net.raceJoin = function (id) { send({ t: 'race_join', id }); };
+  Net.raceLeave = function (id) { send({ t: 'race_leave', id }); };
+  Net.raceReady = function (id, ready) { send({ t: 'race_ready', id, ready: !!ready }); };
+  Net.raceFin = function (id, v) { send({ t: 'race_fin', id, v }); };
   // Chat: getippte Nachricht bzw. Drift-Meldung; liefert false, wenn nicht verbunden
   Net.sendChat = function (text) { if (!Net.connected) return false; send({ t: 'chat', kind: 'msg', text: String(text).slice(0, 140) }); return true; };
   Net.sendDriftChat = function (kind, pts) { if (!Net.connected) return false; send({ t: 'chat', kind, pts: Math.round(pts) }); return true; };
@@ -205,7 +226,7 @@
   Net.snapshot = function (ph) {
     const q = (v, k) => Math.round(v * k) / k;
     return {
-      t: 's', th: q(ph.netTh != null ? ph.netTh : ph.throttle, 100), x: q(ph.x, 100), z: q(ph.z, 100), h: q(ph.h, 1000), vx: q(ph.vx, 100), vz: q(ph.vz, 100),
+      t: 's', ts: Math.round(performance.now()), yr: q(ph.r || 0, 100), pg: ph.racePg || 0, th: q(ph.netTh != null ? ph.netTh : ph.throttle, 100), x: q(ph.x, 100), z: q(ph.z, 100), h: q(ph.h, 1000), vx: q(ph.vx, 100), vz: q(ph.vz, 100),
       st: q(ph.steer, 100), ro: q(ph.roll, 1000), pi: q(ph.pitch, 1000), u: q(ph.u, 100), sp: q(ph.spin, 10),
       sr: q(ph.slipR, 10), sf: q(ph.slipF, 10), hb: ph.hb ? 1 : 0, br: (ph.brakeIn > 0.1 || ph.reverse) ? 1 : 0,
       // für den Motorsound bei den anderen: Drehzahl, Begrenzer, Anzahl Knalle (Anti-Lag, Runterschalten, Fehlzündung)
@@ -223,9 +244,11 @@
   // eigenen Zustand senden (gedrosselt)
   Net.tick = function (dt, ph) {
     if (!Net.connected) return;
+    Net._pingT -= dt;
+    if (Net._pingT <= 0) { Net._pingT = 2; send({ t: 'ping', c: performance.now() }); }
     Net._sendT += dt;
     if (Net._sendT < 1 / SEND_HZ) return;
-    Net._sendT = 0;
+    Net._sendT = Math.min(Net._sendT - 1 / SEND_HZ, 1 / SEND_HZ);   // gleichmäßiger Takt, auch bei schwankender Bildrate
     send(Net.snapshot(ph));
   };
 
@@ -251,17 +274,31 @@
   // fremde Autos darstellen
   Net.update = function (dt) {
     const ctx = Net._ctx; if (!ctx) return;
-    const now = performance.now() / 1000 - DELAY;
+    const tNow = performance.now() / 1000, now = tNow - DELAY;
+    const pred = Math.min(MAX_PRED, DELAY + Net.rtt);          // so weit liegt die Darstellung hinter der Wirklichkeit
     for (const r of Net.remotes.values()) {
       const s = r.snaps;
       const otherMap = ((r.cfg && r.cfg.map) || 'hakone') !== (Net.myMap || 'hakone');
-      if (r.away || !s.length || otherMap) { r.car.root.visible = false; r.cur = null; continue; }
+      if (r.away || !s.length || otherMap) { r.car.root.visible = false; r.cur = null; r.disp = null; continue; }
       let a = s[0], b = s[s.length - 1], f = 1;
       for (let i = 0; i < s.length - 1; i++) if (s[i].at <= now && s[i + 1].at >= now) { a = s[i]; b = s[i + 1]; f = (now - a.at) / Math.max(1e-3, b.at - a.at); break; }
       if (now > b.at) { a = b; f = 0; }
-      const ex = now > b.at ? Math.min(0.25, now - b.at) : 0;   // kurz extrapolieren
+      // Vorausrechnen: Puffer + Ping, bei verspäteten Paketen entsprechend mehr (begrenzt)
+      const ex = Math.min(MAX_PRED + 0.15, pred + (now > b.at ? now - b.at : 0));
+      const ivx = a.vx + (b.vx - a.vx) * f, ivz = a.vz + (b.vz - a.vz) * f, iyr = (a.yr || 0) + ((b.yr || 0) - (a.yr || 0)) * f;
+      const stopped = b.ly > 0 || (b.fl || 0) > 0;             // Hebebühne / auf dem Dach: nicht vorausrechnen
+      const k = stopped ? 0 : ex;
+      const tx = a.x + (b.x - a.x) * f + ivx * k, tz = a.z + (b.z - a.z) * f + ivz * k, th = lerpAngle(a.h, b.h, f) + (a.yr != null ? iyr * k : 0);
+      // weich nachführen: mit eigener Geschwindigkeit weiterbewegen und Abweichung sanft ausgleichen (kein Springen bei neuen Paketen)
+      let D = r.disp;
+      if (!D || Math.hypot(tx - D.x, tz - D.z) > 8) D = r.disp = { x: tx, z: tz, h: th };
+      else {
+        D.x += ivx * dt; D.z += ivz * dt; D.h += iyr * dt;
+        const g = 1 - Math.exp(-dt * 10);
+        D.x += (tx - D.x) * g; D.z += (tz - D.z) * g; D.h = lerpAngle(D.h, th, g);
+      }
       const cur = {
-        x: a.x + (b.x - a.x) * f + b.vx * ex, z: a.z + (b.z - a.z) * f + b.vz * ex, h: lerpAngle(a.h, b.h, f),
+        x: D.x, z: D.z, h: D.h,
         vx: a.vx + (b.vx - a.vx) * f, vz: a.vz + (b.vz - a.vz) * f, st: a.st + (b.st - a.st) * f,
         ro: a.ro + (b.ro - a.ro) * f, pi: a.pi + (b.pi - a.pi) * f, u: a.u + (b.u - a.u) * f, sp: b.sp, sr: b.sr, sf: b.sf, hb: b.hb, br: b.br,
         gy: (a.gy || 0) + ((b.gy || 0) - (a.gy || 0)) * f, gr: (a.gr || 0) + ((b.gr || 0) - (a.gr || 0)) * f,

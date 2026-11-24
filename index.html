@@ -160,6 +160,7 @@
       <button id="chalBtn" class="sec">🏁 PUNKTE-RUNDE</button>
       <button id="lapBtn" class="sec">⏱ ZEITRENNEN</button>
     </div>
+    <div class="toggle-row hidden" id="racePsRow"><span>Online-Rennen: alle mit</span><button id="racePsBtn" class="chip">400 PS</button></div>
     <div class="modebtns" style="margin-top:8px">
       <button id="specBtn" class="sec">👁 ZUSCHAUEN</button>
     </div>
@@ -213,6 +214,13 @@
   </div>
   <div id="popups"></div>
   <div id="chalHud" class="chalhud hidden"><div class="ct" id="chalTitle">CHALLENGE · 1 RUNDE</div><div class="cv"><span id="chalTime">0:00.0</span><span id="chalPts">0</span></div><div class="cbar"><div id="chalFill"></div></div><div class="cr" id="chalRecHud"></div></div>
+  <div id="raceLobby" class="racelobby hidden">
+    <div class="rl-t" id="raceLobbyT">ONLINE-RENNEN</div>
+    <div class="rl-s" id="raceLobbyS"></div>
+    <div id="raceLobbyList" class="rl-list"></div>
+    <div class="rl-h" id="raceLobbyH"></div>
+    <div class="rl-b"><button id="raceReadyBtn" class="go">BEREIT ✔</button><button id="raceLeaveBtn" class="sec">VERLASSEN</button></div>
+  </div>
   <div id="specHud" class="spechud hidden"><div class="st">👁 ZUSCHAUER</div><div class="sn" id="specName">–</div><div class="si" id="specInfo"></div><div class="sk" id="specKeys">◀ ▶ Spieler · C Kamera · Esc Garage</div></div>
   <canvas id="mini" class="mini" width="200" height="200"></canvas>
   <div id="clock" class="clock">☀ 12:00</div>
@@ -239,12 +247,20 @@
   </div>
 </div>
 
+<!-- ===== Einladung zum Online-Rennen (überall sichtbar: Garage, Fahren, Zuschauen) ===== -->
+<div id="raceInv" class="raceinv hidden">
+  <div class="ri-t" id="raceInvT"></div>
+  <div class="ri-s" id="raceInvS"></div>
+  <div class="ri-b"><button id="raceAccBtn" class="go">ANNEHMEN</button><button id="raceDecBtn" class="sec">ABLEHNEN</button></div>
+</div>
+
 <!-- ===== Challenge-Ergebnis ===== -->
 <div id="chalDone" class="screen hidden">
   <div class="pbox">
-    <div class="ptitle">RUNDE GESCHAFFT!</div>
+    <div class="ptitle" id="chalDoneT">RUNDE GESCHAFFT!</div>
     <div class="chres"><b id="chalResPts">0</b><small id="chalResUnit">PUNKTE</small></div>
     <div class="hint" id="chalResInfo"></div>
+    <div id="raceRes" class="raceres hidden"></div>
     <button id="chalAgainBtn" class="go">NOCHMAL ▶</button>
     <button id="chalGarageBtn" class="sec">ZUR GARAGE</button>
   </div>

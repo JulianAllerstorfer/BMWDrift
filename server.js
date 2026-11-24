@@ -277,6 +277,7 @@ class Client {
     if (this.id) {
       players.delete(this.id);
       broadcast({ t: 'leave', id: this.id }, null);
+      raceLeave(this);
       console.log(`- ${this.name} hat das Spiel verlassen (${players.size}/${MAX_PLAYERS})`);
     }
   }
@@ -419,6 +420,93 @@ function onChat(c, m) {
   }
 }
 
+// ---------- Online-Rennen (Punkte-Runde / Zeitrennen) ----------
+// Einer lädt ein, alle anderen bekommen die Einladung. Wer annimmt, steht auf der Startaufstellung;
+// sobald alle BEREIT sind, startet der Countdown für alle gleichzeitig. Alle fahren mit gleicher Leistung (ps).
+// Es läuft immer höchstens ein Rennen gleichzeitig.
+const RACE_PS = [200, 300, 400, 500, 700];
+let race = null, raceSeq = 1;
+function racePub() {
+  if (!race) return null;
+  return {
+    id: race.id, kind: race.kind, map: race.map, ps: race.ps, host: race.host, hostName: race.hostName, state: race.state,
+    startIn: race.startAt ? Math.max(0, race.startAt - Date.now()) : 0,
+    left: race.deadline ? Math.max(0, race.deadline - Date.now()) : 0,
+    members: [...race.members.entries()].map(([id, m]) => { const c = players.get(id); return { id, name: c ? c.name : m.name, slot: c ? c.slot : 0, grid: m.grid, car: c && c.cfg ? cleanCar(c.cfg.model) : null, ready: !!m.ready, res: m.res, dnf: !!m.dnf }; })
+  };
+}
+function raceSend() { broadcast({ t: 'race', race: racePub() }, null); }
+function raceEnd(state) {
+  if (!race) return;
+  clearTimeout(race.timer);
+  if (state === 'done') for (const m of race.members.values()) if (m.res == null) m.dnf = true;
+  race.state = state; raceSend();
+  console.log(`  [Rennen] ${state === 'done' ? 'beendet' : 'abgebrochen'}`);
+  race = null;
+}
+function raceTimer(ms, fn) { clearTimeout(race.timer); const id = race.id; race.timer = setTimeout(() => { if (race && race.id === id) fn(); }, ms); }
+function raceCheck() {
+  if (!race) return;
+  if (!race.members.size) { raceEnd('cancel'); return; }
+  if (race.state === 'lobby' && [...race.members.values()].every(m => m.ready)) {
+    race.state = 'count'; race.startAt = Date.now() + 4000;
+    raceTimer(4000, () => { race.state = 'run'; raceTimer(15 * 60e3, () => raceEnd('done')); raceSend(); });
+    console.log(`  [Rennen] Start mit ${race.members.size} Fahrer(n)`);
+  } else if (race.state === 'run' || race.state === 'count') {
+    if ([...race.members.values()].every(m => m.res != null)) { raceEnd('done'); return; }
+  }
+  raceSend();
+}
+function raceLeave(c) {
+  if (!race || !race.members.has(c.id)) return;
+  const m = race.members.get(c.id);
+  if (race.state === 'lobby' || m.res == null) race.members.delete(c.id);   // wer schon im Ziel ist, bleibt in der Wertung
+  if (race.host === c.id && race.state === 'lobby') {
+    const next = [...race.members.keys()][0], n = next && players.get(next);
+    if (n) { race.host = n.id; race.hostName = n.name; }
+  }
+  raceCheck();
+}
+function onRace(c, m) {
+  const now = Date.now();
+  if (m.t === 'race_new') {
+    if (race && race.state !== 'done') { c.send({ t: 'race_err', msg: race.state === 'lobby' ? (race.hostName + ' lädt gerade schon zum Rennen ein') : 'Es läuft schon ein Rennen' }); c.send({ t: 'race', race: racePub() }); return; }
+    const kind = m.kind === 'time' ? 'time' : 'pts', map = cleanCar(m.map) || 'hakone', ps = RACE_PS.includes(+m.ps) ? +m.ps : 400;
+    race = { id: raceSeq++, kind, map, ps, host: c.id, hostName: c.name, state: 'lobby', members: new Map([[c.id, { name: c.name, grid: 0, ready: false, res: null }]]), created: now, startAt: 0, deadline: 0, timer: null };
+    raceTimer(4 * 60e3, () => raceEnd('cancel'));                // niemand wird bereit: Einladung verfällt
+    console.log(`  [Rennen] ${c.name} lädt ein: ${kind === 'time' ? 'Zeitrennen' : 'Punkte-Runde'} auf ${map}, ${ps} PS`);
+    raceSend(); return;
+  }
+  if (!race || +m.id !== race.id) { if (m.t === 'race_join') c.send({ t: 'race_err', msg: 'Das Rennen gibt es nicht mehr' }); return; }
+  if (m.t === 'race_join') {
+    if (race.state !== 'lobby') { c.send({ t: 'race_err', msg: 'Zu spät – das Rennen läuft schon' }); return; }
+    if (race.members.size >= MAX_PLAYERS) return;
+    if (!race.members.has(c.id)) {
+      const used = new Set([...race.members.values()].map(x => x.grid));   // freier Startplatz (Plätze von Ausgestiegenen werden wieder frei)
+      let grid = 0; while (used.has(grid)) grid++;
+      race.members.set(c.id, { name: c.name, grid, ready: false, res: null });
+      // wer neu dazukommt, muss erst stehen: alle anderen bleiben bereit, Countdown startet erst, wenn auch er bereit ist
+    }
+    raceSend();
+  } else if (m.t === 'race_leave') raceLeave(c);
+  else if (m.t === 'race_ready') {
+    const mm = race.members.get(c.id); if (!mm || race.state !== 'lobby') return;
+    mm.ready = !!m.ready; raceCheck();
+  } else if (m.t === 'race_fin') {
+    const mm = race.members.get(c.id); if (!mm || mm.res != null || race.state !== 'run') return;
+    let v = +m.v || 0;
+    if (race.kind === 'time') {
+      // Zeit gegen die Server-Uhr prüfen (Start war race.startAt): gefälschte Zeiten werden durch die gemessene ersetzt
+      const el = (now - race.startAt) / 1000;
+      if (!(v >= el - 2 && v <= el + 0.5)) v = el;
+      v = Math.round(v * 1000) / 1000;
+    } else v = Math.max(0, Math.min(Math.round(v), (c.total || 0) + 200));   // nur geprüfte Driftpunkte
+    mm.res = v;
+    if (!race.deadline) { race.deadline = now + 90e3; raceTimer(90e3, () => raceEnd('done')); }   // nach dem Ersten: 90 s für den Rest
+    raceCheck();
+  }
+}
+
 function broadcast(obj, except) {
   const frame = encodeFrame(JSON.stringify(obj));
   for (const c of players.values()) if (c !== except && c.alive) { try { c.socket.write(frame); } catch (e) { c.close(); } }
@@ -434,7 +522,7 @@ function onMessage(c, m) {
     c.id = 'p' + (nextId++); c.slot = slot; c.name = clean(m.name); c.uid = cleanUid(m.uid);
     c.rec = recordFor(c, m); c.cfg = cleanCfg(c, m.cfg);
     players.set(c.id, c);
-    c.send({ t: 'welcome', id: c.id, slot, max: MAX_PLAYERS, version: VERSION, urls: lanUrls(), rec: pubRec(c), players: [...players.values()].filter(p => p !== c).map(p => ({ id: p.id, slot: p.slot, name: p.name, cfg: p.cfg, total: p.total || 0, best: p.rec.best, bestCar: p.rec.bestCar || null })), chat: chatLog.slice(-15) });
+    c.send({ t: 'welcome', id: c.id, slot, max: MAX_PLAYERS, version: VERSION, urls: lanUrls(), rec: pubRec(c), players: [...players.values()].filter(p => p !== c).map(p => ({ id: p.id, slot: p.slot, name: p.name, cfg: p.cfg, total: p.total || 0, best: p.rec.best, bestCar: p.rec.bestCar || null })), chat: chatLog.slice(-15), race: race && race.state !== 'done' ? racePub() : null });
     broadcast({ t: 'join', id: c.id, slot, name: c.name, cfg: c.cfg, best: c.rec.best, bestCar: c.rec.bestCar || null }, c);
     console.log(`+ ${c.name} ist beigetreten (${players.size}/${MAX_PLAYERS})`);
     if (pendingMax.has(maxKey(c))) c.send({ t: 'maxprog' });   // altes Spiel hatte den Befehl verpasst
@@ -466,6 +554,8 @@ function onMessage(c, m) {
   else if (m.t === 'maxok') { if (pendingMax.delete(maxKey(c))) console.log(`! ${c.name} ist jetzt auf Max`); }
   else if (m.t === 'away') { broadcast({ t: 'away', id: c.id }, c); }
   else if (m.t === 'chat') onChat(c, m);
+  else if (m.t === 'ping') c.send({ t: 'pong', c: +m.c || 0 });
+  else if (typeof m.t === 'string' && m.t.startsWith('race_')) onRace(c, m);
 }
 
 // ---------- Admin übernimmt das Steuer eines Spielers ----------
