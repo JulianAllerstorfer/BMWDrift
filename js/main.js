@@ -9,7 +9,7 @@
 
   // ---------- Einstellungen ----------
   const TUNE_DEF = { power: 100, turbo: 0, finalPct: 100, weightPct: 100, brakePower: 100, brakeBias: 64, steerSpeed: 100, lock: 54, hbrake: 100, roll: 100, tires: 0, soot: 60, backfire: 100, pressF: 2.2, pressR: 2.2, lsd: 80, stabi: 55 };
-  const DEF = Object.assign({ tod: 'auto', fx: true, engines: {}, map: 'hakone', fuelOn: true, model: 'e46', rimSize: 1, letters: false, lipColor: 0, paint: 0, rimStyle: 0, rimColor: 0, drop: 6, camber: 5, track: 3, assist: 70, maxang: 58, auto: true, sound: true, volume: 100, smokeOn: true, gfx: 'auto', racePs: 400 }, TUNE_DEF, E46.LOOK_DEF);
+  const DEF = Object.assign({ tod: 'auto', fx: true, engines: {}, map: 'hakone', fuelOn: true, model: 'e46', rimSize: 1, letters: false, lipColor: 0, paint: 0, rimStyle: 0, rimColor: 0, drop: 6, camber: 5, track: 3, assist: 70, maxang: 58, auto: true, sound: true, volume: 100, smokeOn: true, gfx: 'auto', racePst: 250, laps: 1 }, TUNE_DEF, E46.LOOK_DEF);
   function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* egal */ } }
   function load(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
   const cfg = Object.assign({}, DEF, load('e46drift.cfg', {}));
@@ -532,7 +532,8 @@
     $('raceLeaveBtn').addEventListener('click', () => { raceExit(); popup('RENNEN VERLASSEN', '', false); });
     $('raceAccBtn').addEventListener('click', raceAccept);
     $('raceDecBtn').addEventListener('click', () => { if (raceSt.inv) raceSt.declined.add(raceSt.inv.id); showInvite(null); });
-    $('racePsBtn').addEventListener('click', () => { const i = RACE_PS.indexOf(cfg.racePs); cfg.racePs = RACE_PS[(i + 1) % RACE_PS.length]; save(); refreshMP(); });
+    $('racePsBtn').addEventListener('click', () => { const i = RACE_PST.indexOf(cfg.racePst); cfg.racePst = RACE_PST[(i + 1) % RACE_PST.length]; save(); refreshMP(); });
+    $('lapsBtn').addEventListener('click', () => { const i = RACE_LAPS.indexOf(cfg.laps); cfg.laps = RACE_LAPS[(i + 1) % RACE_LAPS.length]; save(); refreshMP(); });
     $('chalGarageBtn').addEventListener('click', () => { $('chalDone').classList.add('hidden'); enterGarage(); });
     const ni = $('mpName');
     ni.value = myName;
@@ -580,7 +581,8 @@
       if (mh) mh.textContent = nm + ' · Punkte-Rekord: ' + (r ? fmt(r.pts) : 'noch keiner') + ' · Bestzeit: ' + (lr ? fmtLap(lr.time) : 'noch keine') + (Net.connected ? '' : ' · Zuschauen geht nur online');
     }
     $('racePsRow').classList.toggle('hidden', !Net.connected);
-    $('racePsBtn').textContent = (cfg.racePs || 400) + ' PS';
+    $('racePsBtn').textContent = (cfg.racePst || 250) + ' PS/t';
+    $('lapsBtn').textContent = lapsTxt(cfg.laps || 1).toUpperCase();
     if (!$('mpOn')) return;
     $('mpOff').classList.toggle('hidden', Net.available);
     $('mpOn').classList.toggle('hidden', !Net.available);
@@ -1176,10 +1178,11 @@
 
   // ---------- Challenges über 1 Runde ----------
   // kind 'pts': die meisten Driftpunkte · kind 'time': die schnellste Runde (Zeitrennen)
-  const chal = { mp: false, goAt: 0, raceId: 0, race: null, raceFinal: false, grid: -1, on: false, kind: 'pts', phase: 'count', t: 0, cd: 0, progress: 0, maxProg: 0, wrongT: 0, goal: 1, lastIdx: -1, lastShown: -1 };
+  const chal = { mp: false, goAt: 0, laps: 1, lap: 1, off: 0, lapT0: 0, bestLap: 0, bestLapN: 0, title: '', raceId: 0, race: null, raceFinal: false, grid: -1, on: false, kind: 'pts', phase: 'count', t: 0, cd: 0, progress: 0, maxProg: 0, wrongT: 0, goal: 1, lastIdx: -1, lastShown: -1 };
   rec.chal = rec.chal || {};
   rec.lap = rec.lap || {};                         // Bestzeiten pro Strecke: { time, model }
   const fmtTime = (t) => Math.floor(t / 60) + ':' + (t % 60).toFixed(1).padStart(4, '0');
+  const lapsTxt = (n) => n + (n === 1 ? ' Runde' : ' Runden');
   const fmtLap = (t) => Math.floor(t / 60) + ':' + (t % 60).toFixed(2).padStart(5, '0').replace('.', ',');
   function startChallenge(kind) {
     if (kind === 'time' && track.highway) { popup('KEINE RUNDEN', 'Die Autobahn hört nie auf – probier die Punkte-Challenge', true); $('modeHint').textContent = 'Zeitrennen geht nicht auf der Autobahn – andere Strecke wählen.'; return; }
@@ -1197,20 +1200,23 @@
     skids.clear(); smoke.clear();
     camState.init = false;
     score.total = 0; $('total').textContent = '0'; Net.sendScore(0, 0);
-    Object.assign(chal, { on: true, phase: 'count', t: 0, cd: 3.4, progress: 0, maxProg: 0, wrongT: 0, lastIdx: -1, lastShown: -1 });
+    Object.assign(chal, { on: true, phase: 'count', t: 0, cd: 3.4, progress: 0, maxProg: 0, wrongT: 0, lastIdx: -1, lastShown: -1, lap: 1, lapT0: 0, bestLap: 0, bestLapN: 0 });
+    chal.laps = chal.mp && chal.race ? chal.race.laps || 1 : cfg.laps || 1;
+    chal.title = (chal.kind === 'time' ? 'ZEITRENNEN' : 'CHALLENGE') + ' · ' + lapsTxt(chal.laps).toUpperCase();
     fuel = 1; fuelWarn = false;                      // jede Runde mit vollem Tank
-    $('chalTitle').textContent = chal.kind === 'time' ? 'ZEITRENNEN · 1 RUNDE' : 'CHALLENGE · 1 RUNDE';
+
     $('chalHud').classList.remove('hidden');
     updateChalHud();
     refreshMP();
   }
   function updateChalHud() {
+    $('chalTitle').textContent = chal.title + (chal.laps > 1 && chal.phase !== 'lobby' ? ' · RUNDE ' + chal.lap + '/' + chal.laps : '');
     if (chal.kind === 'time') {
       const b = rec.lap[cfg.map];
       $('chalTime').textContent = fmtLap(chal.t);
       // rechts: Abstand zur eigenen Bestzeit (hochgerechnet über den Rundenfortschritt)
       let diff = '';
-      if (b && chal.phase === 'run' && chal.progress > 30) { const d = chal.t - b.time * chal.progress / chal.goal; diff = (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(1).replace('.', ','); }
+      if (b && chal.laps === 1 && chal.phase === 'run' && chal.progress > 30) { const d = chal.t - b.time * chal.progress / chal.goal; diff = (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(1).replace('.', ','); }
       $('chalPts').textContent = diff;
       $('chalPts').style.color = diff ? (diff[0] === '+' ? '#ff6b6b' : '#6fe38a') : '';
       $('chalFill').style.width = Math.max(0, Math.min(100, chal.progress / chal.goal * 100)) + '%';
@@ -1235,12 +1241,13 @@
       if (chal.cd <= 0.4) {
         chal.phase = 'run'; chal.t = 0; chal.progress = 0;
         chal.lastIdx = phys.trackIdx;
-        // Ziel: einmal komplett rum, bis zur Start-/Ziellinie
+        // Ziel: von der Startaufstellung bis zur Linie (off), dann so viele Runden wie gewählt
         const N = track.N, i0 = phys.trackIdx >= 0 ? phys.trackIdx : track.startI - 12;
-        chal.goal = N + (((track.startI - i0) % N) + N) % N;
+        chal.off = (((track.startI - i0) % N) + N) % N;
+        chal.goal = N * chal.laps + chal.off;
         score.total = 0; cancelChain();
         if (chal.mp) Net.sendScore(0, 0);
-        popup('GO!', chal.kind === 'time' ? 'Die schnellste Runde gewinnt' : 'Die meisten Punkte in einer Runde', false); rumble(0.4, 0.4, 150);
+        popup('GO!', chal.kind === 'time' ? (chal.laps > 1 ? 'Wer zuerst ' + lapsTxt(chal.laps) + ' schafft, gewinnt' : 'Die schnellste Runde gewinnt') : 'Die meisten Punkte in ' + (chal.laps > 1 ? lapsTxt(chal.laps) : 'einer Runde'), false); rumble(0.4, 0.4, 150);
       }
     } else if (chal.phase === 'run') {
       chal.t += dt;
@@ -1258,15 +1265,39 @@
       chal.wrongT -= dt;
       if (chal.progress < chal.maxProg - 20 && chal.wrongT <= 0) { chal.wrongT = 2.5; popup('FALSCHE RICHTUNG!', 'Umdrehen – die Runde zählt nur vorwärts', true); rumble(0.4, 0.4, 200); }
       if (chal.mp) phys.racePg = Math.max(0, Math.min(1000, Math.round(chal.progress / chal.goal * 1000)));
-      if (chal.progress >= chal.goal) finishChallenge();
+      // Rundenwechsel: Rundenzeit anzeigen, schnellste Runde merken
+      const lap = Math.min(chal.laps, Math.floor(Math.max(0, chal.progress - chal.off) / track.N) + 1);
+      if (lap > chal.lap && chal.progress < chal.goal) {
+        lapDone();
+        chal.lap = lap;
+        popup(lap === chal.laps ? 'LETZTE RUNDE!' : 'RUNDE ' + lap + '/' + chal.laps, 'Runde ' + (lap - 1) + ': ' + fmtLap(chal.lastLap) + (chal.bestLapN === lap - 1 && lap > 2 ? ' · schnellste bisher' : ''), 'lvl');
+      }
+      if (chal.progress >= chal.goal) { lapDone(); finishChallenge(); }
     }
     updateChalHud();
+  }
+  function lapDone() {
+    const lt = chal.t - chal.lapT0; chal.lapT0 = chal.t; chal.lastLap = lt;
+    if (!chal.bestLap || lt < chal.bestLap) { chal.bestLap = lt; chal.bestLapN = chal.lap; }
+  }
+  // mehrere Runden: Gesamtergebnis zeigen; Rekorde und Bestzeiten zählen nur bei genau 1 Runde (sonst nicht vergleichbar)
+  function finishMulti() {
+    const mp = cfg.map, nm = esc((Track.MAPS[mp] || {}).name || mp), time = chal.kind === 'time';
+    $('chalResPts').textContent = time ? fmtLap(chal.t) : fmt(Math.round(score.total));
+    $('chalResUnit').textContent = (time ? 'GESAMTZEIT' : 'PUNKTE') + ' · ' + lapsTxt(chal.laps).toUpperCase();
+    $('chalResInfo').innerHTML = nm + ' · ' + esc(carName(cfg.model)) + (time ? '' : ' · Zeit ' + fmtLap(chal.t)) + '<br>' +
+      'Schnellste Runde: ' + fmtLap(chal.bestLap) + ' (Runde ' + chal.bestLapN + ')<br><small>Rekorde und Bestzeiten zählen nur bei 1 Runde.</small>';
+    $('chalDone').classList.remove('hidden');
+    if (padNav.connected) setPadFocus($('chalAgainBtn'));
+    raceResults();
+    refreshMP();
   }
   function finishChallenge() {
     if (score.active) bankChain();
     chal.phase = 'done';
     if (chal.mp) { Net.raceFin(chal.raceId, chal.kind === 'time' ? Math.round(chal.t * 1000) / 1000 : Math.round(score.total)); phys.racePg = 1000; }
     $('chalDoneT').textContent = chal.mp ? 'IM ZIEL!' : 'RUNDE GESCHAFFT!';
+    if (chal.laps > 1) { finishMulti(); return; }
     if (chal.kind === 'time') { finishLap(); raceResults(); return; }
     $('chalResUnit').textContent = 'PUNKTE';
     const pts = Math.round(score.total), old = rec.chal[cfg.map], isRec = !old || pts > old.pts;
@@ -1322,13 +1353,13 @@
   // Ablauf: einer klickt PUNKTE-RUNDE/ZEITRENNEN -> alle anderen bekommen eine Einladung -> wer annimmt, steht
   // auf seinem Startplatz (Auto festgehalten) -> sobald alle BEREIT sind, zählt der Server für alle gleichzeitig runter.
   // Alle fahren mit derselben Spitzenleistung (ps), Gewichts-Tuning gilt im Rennen nicht.
-  const RACE_PS = [200, 300, 400, 500, 700];
+  const RACE_PST = [150, 200, 250, 300, 400], RACE_LAPS = [1, 2, 3, 5, 10];   // PS pro Tonne, Rundenzahl
   const raceSt = { declined: new Set(), inv: null, boardT: 0 };
   const raceMe = (r) => r && r.members ? r.members.find(m => m.id === Net.myId) : null;
   const raceKind = (k) => k === 'time' ? 'ZEITRENNEN' : 'PUNKTE-RUNDE';
   const mapName = (id) => (Track.MAPS[id] || {}).name || id;
   function raceCreate(kind) {
-    Net.raceNew(kind, cfg.map, cfg.racePs || 400);
+    Net.raceNew(kind, cfg.map, cfg.racePst || 250, cfg.laps || 1);
     $('modeHint').textContent = 'Einladung an alle verschickt …';
   }
   function raceAccept() {
@@ -1342,7 +1373,7 @@
     const el = $('raceInv');
     if (!r || mode === 'loading') { el.classList.add('hidden'); return; }
     $('raceInvT').textContent = '🏁 ' + r.hostName + ' lädt ' + (r.kind === 'time' ? 'zum ZEITRENNEN' : 'zur PUNKTE-RUNDE') + ' ein';
-    $('raceInvS').textContent = mapName(r.map) + ' · alle mit ' + r.ps + ' PS · ' + r.members.length + ' dabei';
+    $('raceInvS').textContent = mapName(r.map) + ' · ' + lapsTxt(r.laps) + ' · alle mit ' + r.pst + ' PS pro Tonne · ' + r.members.length + ' dabei';
     if (el.classList.contains('hidden')) { el.classList.remove('hidden'); Sound.click && Sound.click(); }
   }
   function onRace(r) {
@@ -1371,7 +1402,7 @@
         chal.phase = 'done'; phys.racePg = 0;
         $('chalDoneT').textContent = 'ZEIT ABGELAUFEN';
         $('chalResPts').textContent = 'DNF'; $('chalResUnit').textContent = 'NICHT IM ZIEL';
-        $('chalResInfo').innerHTML = '90 Sekunden nach dem Ersten ist Schluss.';
+        $('chalResInfo').innerHTML = (r.grace || 90) + ' Sekunden nach dem Ersten ist Schluss.';
         $('chalDone').classList.remove('hidden');
         if (padNav.connected) setPadFocus($('chalAgainBtn'));
       }
@@ -1390,18 +1421,20 @@
     $('popups').innerHTML = '';
     const me = raceMe(r);
     Object.assign(chal, { kind: r.kind, mp: true, raceId: r.id, race: r, raceFinal: false, grid: me ? me.grid | 0 : 0 });
-    applyRacePower(r.ps);
+    applyRacePower(r.pst);
     restartChallenge();
     chal.phase = 'lobby'; chal.goAt = 0;
-    $('chalTitle').textContent = 'ONLINE-' + raceKind(r.kind) + ' · ' + r.ps + ' PS';
+    chal.title = 'ONLINE-' + raceKind(r.kind) + ' · ' + lapsTxt(r.laps).toUpperCase() + ' · ' + r.pst + ' PS/t';
     showLobby(r);
     popup('STARTAUFSTELLUNG', 'Klick BEREIT, wenn du startklar bist', false);
   }
-  // gleiche Leistung für alle: Drehmoment so skalieren, dass die Spitzenleistung genau ps ergibt
-  function applyRacePower(ps) {
+  // gleiches Leistungsgewicht für alle: Drehmoment so skalieren, dass Spitzenleistung = pst × Gewicht in Tonnen
+  // (schweres Auto bekommt mehr PS, leichtes weniger – so beschleunigen alle gleich stark)
+  function applyRacePower(pst) {
     Physics.applyTuning(Object.assign({}, cfg, { weightPct: 100 }));
-    const pk = Physics.peakPS();
+    const pk = Physics.peakPS(), ps = Math.round(pst * Physics.P.mass / 1000);
     if (pk > 0 && ps > 0) Physics.P.maxTorque *= ps / pk;
+    raceSt.myPs = ps;
     Sound.setAls && Sound.setAls(Physics.P.als);
   }
   function raceExit(msg) {
@@ -1430,7 +1463,7 @@
   function showLobby(r) {
     $('raceLobby').classList.remove('hidden');
     $('raceLobbyT').textContent = 'ONLINE-' + raceKind(r.kind);
-    $('raceLobbyS').textContent = mapName(r.map) + ' · alle mit ' + r.ps + ' PS';
+    $('raceLobbyS').textContent = mapName(r.map) + ' · ' + lapsTxt(r.laps) + ' · alle mit ' + r.pst + ' PS pro Tonne · dein Auto: ' + raceSt.myPs + ' PS';
     $('raceLobbyList').innerHTML = r.members.map(m => raceRow(m, '', m.ready ? '<b class="ok">BEREIT ✔</b>' : '<b>wartet …</b>')).join('');
     const me = raceMe(r), n = r.members.length, nr = r.members.filter(m => m.ready).length;
     $('raceReadyBtn').textContent = me && me.ready ? 'DOCH NICHT' : 'BEREIT ✔';
@@ -1454,7 +1487,7 @@
     const b = $('board'), r = chal.race; if (!r || !chal.mp) return;
     b.classList.remove('hidden');
     if (chal.phase === 'lobby') { b.classList.add('hidden'); return; }   // in der Aufstellung steht alles im Lobby-Fenster
-    b.innerHTML = '<div class="hdr">ONLINE-' + raceKind(r.kind) + ' · ' + r.ps + ' PS</div>' + raceRank(r).map((e, i) => {
+    b.innerHTML = '<div class="hdr">ONLINE-' + raceKind(r.kind) + (r.laps > 1 ? ' · ' + lapsTxt(r.laps).toUpperCase() : '') + '</div>' + raceRank(r).map((e, i) => {
       const m = e.m, val = m.res != null ? (r.kind === 'time' ? '🏁 ' + fmtLap(m.res) : '🏁 ' + fmt(m.res)) : r.kind === 'time' ? Math.round(Math.min(1000, e.pg) / 10) + ' %' : fmt(e.pts);
       return '<div class="row' + (m.id === Net.myId ? ' me' : '') + '"><i style="background:' + Net.slotColor(m.slot) + '"></i><span>' + (i + 1) + '. ' + esc(m.id === Net.myId ? myName : m.name) + '</span><span>' + val + '</span></div>';
     }).join('');

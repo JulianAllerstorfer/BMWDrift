@@ -147,11 +147,14 @@ Bist du online und es sind andere Spieler da, startet **🏁 PUNKTE-RUNDE** bzw.
 - Alle anderen bekommen oben eine **Einladung** (ANNEHMEN / ABLEHNEN) – in der Garage, beim Fahren und beim Zuschauen.
 - Wer annimmt, landet auf der Strecke des Einladenden auf seinem eigenen **Startplatz** in der Startaufstellung; das Auto steht fest.
 - Mit **BEREIT** (oder Enter / X / Controller-Back) meldest du dich startklar. Sind alle bereit, zählt der Server für alle gleichzeitig 3-2-1-GO.
-- **Gleiche Leistung:** Alle fahren mit derselben Spitzenleistung (in der Garage unter den Knöpfen einstellbar: 200–700 PS, Standard 400). Gewichts-Tuning gilt im Rennen nicht. Nach dem Rennen hast du wieder deine eigenen PS.
-- Links läuft die Live-Rangliste (Zeitrennen: Fortschritt in %, Punkte-Runde: aktuelle Punkte). Ist der Erste im Ziel, haben die anderen noch 90 Sekunden, sonst DNF.
+- **Gleiches Leistungsgewicht:** Alle fahren mit gleich viel PS pro Tonne (in der Garage einstellbar: 150–400 PS/t, Standard 250). Ein schweres Auto bekommt also mehr PS, ein leichtes weniger – bei 250 PS/t z. B. E46 355 PS, G31 459 PS, Moped 40 PS. Die Lobby zeigt dir, wie viel PS dein Auto im Rennen hat. Gewichts-Tuning gilt im Rennen nicht. Nach dem Rennen hast du wieder deine eigenen PS.
+- Links läuft die Live-Rangliste (Zeitrennen: Fortschritt in %, Punkte-Runde: aktuelle Punkte). Ist der Erste im Ziel, haben die anderen noch 60 s + 30 s pro Runde (bei 1 Runde also 90 s), sonst DNF.
 - Zeiten und Punkte prüft der Server (Zeit gegen seine eigene Uhr, Punkte gegen die geprüften Drifts).
 - Es läuft immer nur ein Rennen gleichzeitig. Eine Einladung, bei der nach 4 Minuten nicht alle bereit sind, verfällt.
 Allein (offline oder niemand sonst online) funktionieren beide Modi wie bisher als Solo-Runde.
+
+## Rundenzahl
+In der Garage unter den Knöpfen **Runden** wählen: 1, 2, 3, 5 oder 10 – gilt für Punkte-Runde und Zeitrennen, solo und online (beim Online-Rennen bestimmt der Einladende). Oben steht **RUNDE 2/3**, bei jedem Rundenwechsel kommt die Rundenzeit, vor der letzten **LETZTE RUNDE!**. Im Ziel siehst du Gesamtzeit bzw. Gesamtpunkte und deine schnellste Runde. Rekorde und Bestzeiten zählen nur bei 1 Runde, damit sie vergleichbar bleiben.
 
 ## Zuschauermodus (online)
 In der Garage auf **👁 ZUSCHAUEN** klicken. Du fährst nicht selbst, bist für die anderen unsichtbar und schaust ihnen zu.

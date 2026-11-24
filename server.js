@@ -424,13 +424,14 @@ function onChat(c, m) {
 // Einer lädt ein, alle anderen bekommen die Einladung. Wer annimmt, steht auf der Startaufstellung;
 // sobald alle BEREIT sind, startet der Countdown für alle gleichzeitig. Alle fahren mit gleicher Leistung (ps).
 // Es läuft immer höchstens ein Rennen gleichzeitig.
-const RACE_PS = [200, 300, 400, 500, 700];
+const RACE_PST = [150, 200, 250, 300, 400], RACE_LAPS = [1, 2, 3, 5, 10];   // PS pro Tonne, Rundenzahl
 let race = null, raceSeq = 1;
+const raceGrace = (laps) => 60 + 30 * laps;                       // Sekunden nach dem Ersten (1 Runde: 90 s)
 function racePub() {
   if (!race) return null;
   return {
-    id: race.id, kind: race.kind, map: race.map, ps: race.ps, host: race.host, hostName: race.hostName, state: race.state,
-    startIn: race.startAt ? Math.max(0, race.startAt - Date.now()) : 0,
+    id: race.id, kind: race.kind, map: race.map, pst: race.pst, laps: race.laps, host: race.host, hostName: race.hostName, state: race.state,
+    grace: raceGrace(race.laps), startIn: race.startAt ? Math.max(0, race.startAt - Date.now()) : 0,
     left: race.deadline ? Math.max(0, race.deadline - Date.now()) : 0,
     members: [...race.members.entries()].map(([id, m]) => { const c = players.get(id); return { id, name: c ? c.name : m.name, slot: c ? c.slot : 0, grid: m.grid, car: c && c.cfg ? cleanCar(c.cfg.model) : null, ready: !!m.ready, res: m.res, dnf: !!m.dnf }; })
   };
@@ -450,7 +451,7 @@ function raceCheck() {
   if (!race.members.size) { raceEnd('cancel'); return; }
   if (race.state === 'lobby' && [...race.members.values()].every(m => m.ready)) {
     race.state = 'count'; race.startAt = Date.now() + 4000;
-    raceTimer(4000, () => { race.state = 'run'; raceTimer(15 * 60e3, () => raceEnd('done')); raceSend(); });
+    raceTimer(4000, () => { race.state = 'run'; raceTimer((5 + 5 * race.laps) * 60e3, () => raceEnd('done')); raceSend(); });
     console.log(`  [Rennen] Start mit ${race.members.size} Fahrer(n)`);
   } else if (race.state === 'run' || race.state === 'count') {
     if ([...race.members.values()].every(m => m.res != null)) { raceEnd('done'); return; }
@@ -471,10 +472,10 @@ function onRace(c, m) {
   const now = Date.now();
   if (m.t === 'race_new') {
     if (race && race.state !== 'done') { c.send({ t: 'race_err', msg: race.state === 'lobby' ? (race.hostName + ' lädt gerade schon zum Rennen ein') : 'Es läuft schon ein Rennen' }); c.send({ t: 'race', race: racePub() }); return; }
-    const kind = m.kind === 'time' ? 'time' : 'pts', map = cleanCar(m.map) || 'hakone', ps = RACE_PS.includes(+m.ps) ? +m.ps : 400;
-    race = { id: raceSeq++, kind, map, ps, host: c.id, hostName: c.name, state: 'lobby', members: new Map([[c.id, { name: c.name, grid: 0, ready: false, res: null }]]), created: now, startAt: 0, deadline: 0, timer: null };
+    const kind = m.kind === 'time' ? 'time' : 'pts', map = cleanCar(m.map) || 'hakone', pst = RACE_PST.includes(+m.pst) ? +m.pst : 250, laps = RACE_LAPS.includes(+m.laps) ? +m.laps : 1;
+    race = { id: raceSeq++, kind, map, pst, laps, host: c.id, hostName: c.name, state: 'lobby', members: new Map([[c.id, { name: c.name, grid: 0, ready: false, res: null }]]), created: now, startAt: 0, deadline: 0, timer: null };
     raceTimer(4 * 60e3, () => raceEnd('cancel'));                // niemand wird bereit: Einladung verfällt
-    console.log(`  [Rennen] ${c.name} lädt ein: ${kind === 'time' ? 'Zeitrennen' : 'Punkte-Runde'} auf ${map}, ${ps} PS`);
+    console.log(`  [Rennen] ${c.name} lädt ein: ${kind === 'time' ? 'Zeitrennen' : 'Punkte-Runde'} auf ${map}, ${pst} PS/t, ${laps} Runde(n)`);
     raceSend(); return;
   }
   if (!race || +m.id !== race.id) { if (m.t === 'race_join') c.send({ t: 'race_err', msg: 'Das Rennen gibt es nicht mehr' }); return; }
@@ -502,7 +503,7 @@ function onRace(c, m) {
       v = Math.round(v * 1000) / 1000;
     } else v = Math.max(0, Math.min(Math.round(v), (c.total || 0) + 200));   // nur geprüfte Driftpunkte
     mm.res = v;
-    if (!race.deadline) { race.deadline = now + 90e3; raceTimer(90e3, () => raceEnd('done')); }   // nach dem Ersten: 90 s für den Rest
+    if (!race.deadline) { const ms = raceGrace(race.laps) * 1000; race.deadline = now + ms; raceTimer(ms, () => raceEnd('done')); }   // nach dem Ersten: Restzeit für die anderen
     raceCheck();
   }
 }

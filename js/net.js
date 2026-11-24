@@ -213,7 +213,7 @@
   Net.sendAway = function () { send({ t: 'away' }); };
   Net.sendCtlState = function (mode) { send({ t: 'ctlstate', mode }); };
   // Online-Rennen
-  Net.raceNew = function (kind, map, ps) { send({ t: 'race_new', kind, map, ps }); };
+  Net.raceNew = function (kind, map, pst, laps) { send({ t: 'race_new', kind, map, pst, laps }); };
   Net.raceJoin = function (id) { send({ t: 'race_join', id }); };
   Net.raceLeave = function (id) { send({ t: 'race_leave', id }); };
   Net.raceReady = function (id, ready) { send({ t: 'race_ready', id, ready: !!ready }); };
