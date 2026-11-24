@@ -506,6 +506,249 @@
     })(start);
   }
 
+  // ---------- Jumpscare 4 "KOFFERRAUM": Es klopft im Kofferraum, Deckel geht einen Spalt auf, dann springt es raus (~11 s) ----------
+
+  // Nacht-Parkplatz, BMW von hinten. open 0..1 = Kofferraumdeckel, rock = Wackeln, eyes 0..1, lamp 0..1
+  function drawTrunkScene(c, open, rock, eyes, fingers, lamp) {
+    const W = c.width, H = c.height, g = c.getContext('2d');
+    g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+    const gy = H * 0.8;
+    // Straßenlaterne von oben links
+    const cone = g.createRadialGradient(W * 0.3, -H * 0.1, 10, W * 0.45, gy, H * 1.1);
+    cone.addColorStop(0, `rgba(255,190,110,${0.5 * lamp})`); cone.addColorStop(0.45, `rgba(90,70,50,${0.25 * lamp})`); cone.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = cone; g.fillRect(0, 0, W, H);
+    // nasser Asphalt
+    const road = g.createLinearGradient(0, gy - 40, 0, H);
+    road.addColorStop(0, `rgba(30,28,26,${0.6 + 0.4 * lamp})`); road.addColorStop(1, '#050505');
+    g.fillStyle = road; g.fillRect(0, gy - 40, W, H);
+
+    const s = Math.min(W / 1300, H / 950);
+    g.save(); g.translate(W / 2, gy); g.scale(s, s); g.rotate(rock * 0.012); g.translate(0, -Math.abs(rock) * 6);
+    const L = 0.35 + 0.65 * lamp, col = (r, gg, b) => `rgb(${r * L | 0},${gg * L | 0},${b * L | 0})`;
+    // Schatten
+    g.fillStyle = 'rgba(0,0,0,0.8)'; g.beginPath(); g.ellipse(0, 0, 520, 40, 0, 0, Math.PI * 2); g.fill();
+    // Reifen
+    g.fillStyle = '#0a0a0a';
+    for (const x of [-330, 330]) { g.beginPath(); g.roundRect(x - 60, -110, 120, 110, 18); g.fill(); }
+    // Dach + Heckscheibe
+    g.fillStyle = col(38, 40, 46); g.beginPath(); g.moveTo(-230, -580); g.lineTo(230, -580); g.lineTo(255, -545); g.lineTo(-255, -545); g.closePath(); g.fill();
+    const glass = g.createLinearGradient(0, -545, 0, -370);
+    glass.addColorStop(0, col(30, 38, 52)); glass.addColorStop(1, col(8, 10, 14));
+    g.fillStyle = glass; g.beginPath(); g.moveTo(-255, -545); g.lineTo(255, -545); g.lineTo(380, -370); g.lineTo(-380, -370); g.closePath(); g.fill();
+    g.strokeStyle = `rgba(255,220,180,${0.12 * lamp})`; g.lineWidth = 10;
+    g.beginPath(); g.moveTo(-180, -530); g.lineTo(-300, -390); g.stroke();
+    // Karosserie hinten (Kotflügel + Stoßstange)
+    const body = g.createLinearGradient(0, -380, 0, -80);
+    body.addColorStop(0, col(70, 72, 80)); body.addColorStop(1, col(22, 23, 27));
+    g.fillStyle = body; g.beginPath(); g.moveTo(-395, -375); g.lineTo(395, -375); g.lineTo(450, -300); g.lineTo(455, -110); g.quadraticCurveTo(455, -80, 420, -80);
+    g.lineTo(-420, -80); g.quadraticCurveTo(-455, -80, -455, -110); g.lineTo(-450, -300); g.closePath(); g.fill();
+    g.fillStyle = col(16, 16, 19); g.fillRect(-440, -170, 880, 16);
+    // Auspuff
+    g.fillStyle = '#050505'; for (const x of [250, 310]) { g.beginPath(); g.ellipse(x, -88, 24, 12, 0, 0, Math.PI * 2); g.fill(); }
+    // Kofferraum-Öffnung (Innenraum schwarz, leicht rot)
+    const lidBottom = -255 - open * 290, gapTop = Math.min(lidBottom, -255);
+    if (open > 0.001) {
+      const inside = g.createLinearGradient(0, gapTop, 0, -255);
+      inside.addColorStop(0, '#000'); inside.addColorStop(1, `rgba(40,0,0,1)`);
+      g.fillStyle = inside; g.beginPath(); g.moveTo(-300, -375); g.lineTo(300, -375); g.lineTo(305, -255); g.lineTo(-305, -255); g.closePath(); g.fill();
+      if (open < 0.999) { g.fillStyle = '#000'; g.fillRect(-305, gapTop, 610, -255 - gapTop); }
+      // Augen im Spalt
+      if (eyes > 0) {
+        const ey = (lidBottom + -255) / 2 + 4;
+        for (const ex of [-55, 55]) {
+          const e = g.createRadialGradient(ex, ey, 0, ex, ey, 34);
+          e.addColorStop(0, `rgba(255,255,255,${eyes})`); e.addColorStop(0.25, `rgba(255,20,20,${eyes})`); e.addColorStop(1, 'rgba(255,0,0,0)');
+          g.fillStyle = e; g.beginPath(); g.arc(ex, ey, 34, 0, Math.PI * 2); g.fill();
+        }
+      }
+    }
+    // Kofferraumdeckel (klappt nach oben weg, wird dabei flacher)
+    const lidH = 120 * (1 - open * 0.75);
+    g.fillStyle = col(64, 66, 74); g.beginPath();
+    g.moveTo(-305, lidBottom); g.lineTo(305, lidBottom); g.lineTo(300 - open * 30, lidBottom - lidH); g.lineTo(-300 + open * 30, lidBottom - lidH); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,0.7)'; g.lineWidth = 4; g.stroke();
+    // Rücklichter (L-Form) mit Glühen
+    for (const sx of [-1, 1]) {
+      g.save(); g.scale(sx, 1);
+      const glow = g.createRadialGradient(380, -310, 5, 380, -310, 180);
+      glow.addColorStop(0, 'rgba(255,30,20,0.55)'); glow.addColorStop(1, 'rgba(255,0,0,0)');
+      g.fillStyle = glow; g.fillRect(200, -490, 360, 360);
+      g.fillStyle = '#c3120c'; g.beginPath(); g.moveTo(312, -365); g.lineTo(392, -365); g.lineTo(442, -300); g.lineTo(442, -250); g.lineTo(312, -250); g.closePath(); g.fill();
+      g.fillStyle = '#ff6a55'; g.fillRect(330, -345, 80, 18);
+      g.restore();
+    }
+    // Kennzeichen
+    g.fillStyle = col(225, 225, 215); g.fillRect(-120, -235, 240, 56);
+    g.fillStyle = '#1b3fb0'; g.fillRect(-120, -235, 26, 56);
+    g.fillStyle = '#111'; g.font = '900 38px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('M\u00b7E 46', 14, -206);
+    // Finger, die sich unter dem Deckel herauskrallen
+    if (fingers > 0 && open > 0.01) {
+      g.strokeStyle = `rgba(215,205,190,${fingers})`; g.lineCap = 'round'; g.lineWidth = 12;
+      for (let i = 0; i < 4; i++) {
+        const x = -200 + i * 30;
+        g.beginPath(); g.moveTo(x, lidBottom + 4); g.quadraticCurveTo(x - 6, lidBottom + 26 * fingers, x + 4, lidBottom + 40 * fingers); g.stroke();
+      }
+      for (let i = 0; i < 4; i++) {
+        const x = 110 + i * 30;
+        g.beginPath(); g.moveTo(x, lidBottom + 4); g.quadraticCurveTo(x + 6, lidBottom + 22 * fingers, x - 2, lidBottom + 34 * fingers); g.stroke();
+      }
+    }
+    g.restore();
+    // Körnung + Vignette
+    for (let i = 0; i < 50; i++) { g.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`; g.fillRect(Math.random() * W, Math.random() * H, 2, 2); }
+    const v = g.createRadialGradient(W / 2, H / 2, H * 0.25, W / 2, H / 2, Math.max(W, H) * 0.75);
+    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.92)');
+    g.fillStyle = v; g.fillRect(0, 0, W, H);
+    return { x: W / 2, y: gy + (-255 - open * 145) * s, s };
+  }
+
+  // Die Gestalt im Sprung: fliegt aus dem Kofferraum direkt auf die Kamera zu (k 0..1)
+  function drawLeaper(c, from, k) {
+    const W = c.width, H = c.height, g = c.getContext('2d');
+    const e = k * k * k, size = from.s * (0.35 + e * 9);
+    const x = from.x + (W / 2 - from.x) * e, y = from.y + (H * 0.45 - from.y) * e - Math.sin(k * Math.PI) * H * 0.15;
+    g.save(); g.translate(x, y); g.scale(size, size); g.rotate(Math.sin(k * 9) * 0.15);
+    g.lineCap = 'round'; g.strokeStyle = '#cfc6b6'; g.lineWidth = 22;
+    // Arme nach vorne ausgestreckt, Krallen
+    for (const sx of [-1, 1]) {
+      g.beginPath(); g.moveTo(sx * 60, 120); g.lineTo(sx * 230, 30); g.lineTo(sx * 320, -60); g.stroke();
+      g.lineWidth = 7;
+      for (let f = -2; f <= 2; f++) { g.beginPath(); g.moveTo(sx * 320, -60); g.lineTo(sx * (360 + Math.abs(f) * 6), -60 + f * 26); g.stroke(); }
+      g.lineWidth = 22;
+    }
+    g.fillStyle = '#b9b0a0'; g.beginPath(); g.ellipse(0, 230, 90, 160, 0, 0, Math.PI * 2); g.fill();
+    // Kopf mit aufgerissenem Maul
+    g.fillStyle = '#ddd5c6'; g.beginPath(); g.ellipse(0, 0, 120, 160, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#000';
+    for (const ex of [-45, 45]) { g.beginPath(); g.ellipse(ex, -40, 32, 42, ex < 0 ? 0.3 : -0.3, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = '#ff2020';
+    for (const ex of [-45, 45]) { g.beginPath(); g.arc(ex, -36, 9, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = '#000'; g.beginPath(); g.ellipse(0, 75, 60, 40 + k * 45, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#eee';
+    for (let i = -4; i <= 4; i++) { g.beginPath(); g.moveTo(i * 13 - 5, 40); g.lineTo(i * 13, 62); g.lineTo(i * 13 + 5, 40); g.fill(); }
+    g.restore();
+  }
+
+  function audio4(knocks, creakAt, quietAt, hitAt, hitDur) {
+    const S = window.Sound;
+    let ctx = S && S.ctx;
+    try { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+    if (ctx.state === 'suspended') ctx.resume();
+    const t0 = ctx.currentTime;
+    const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -3; comp.ratio.value = 14; comp.connect(ctx.destination);
+    const out = ctx.createGain(); out.connect(comp);
+    out.gain.setValueAtTime(1, t0); out.gain.setValueAtTime(1, t0 + quietAt - 0.05); out.gain.linearRampToValueAtTime(0, t0 + quietAt);
+    out.gain.setValueAtTime(0, t0 + hitAt - 0.01); out.gain.linearRampToValueAtTime(1, t0 + hitAt);
+    out.gain.setValueAtTime(1, t0 + hitAt + hitDur - 0.6); out.gain.linearRampToValueAtTime(0, t0 + hitAt + hitDur);
+    const noise = (len) => { const b = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * len)), ctx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; };
+    // Wind / Nacht
+    const wind = ctx.createBufferSource(); wind.buffer = noise(quietAt);
+    const wlp = ctx.createBiquadFilter(); wlp.type = 'lowpass'; wlp.frequency.value = 400;
+    const wg = ctx.createGain(); wg.gain.value = 0.08;
+    wind.connect(wlp); wlp.connect(wg); wg.connect(out); wind.start(t0);
+    // Dumpfes Klopfen von innen gegen Blech (wird lauter)
+    knocks.forEach((at, i) => {
+      const t = t0 + at, vol = 0.25 + (i / knocks.length) * 0.75;
+      const o = ctx.createOscillator(), og = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(55, t + 0.15);
+      og.gain.setValueAtTime(vol, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      o.connect(og); og.connect(out); o.start(t); o.stop(t + 0.3);
+      const n = ctx.createBufferSource(); n.buffer = noise(0.06);
+      const nf = ctx.createBiquadFilter(); nf.type = 'bandpass'; nf.frequency.value = 900; nf.Q.value = 2;
+      const ng = ctx.createGain(); ng.gain.setValueAtTime(vol * 0.5, t); ng.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+      n.connect(nf); nf.connect(ng); ng.connect(out); n.start(t);
+    });
+    // Knarzendes Scharnier
+    const tc = t0 + creakAt, cd = 1.4;
+    const cr = ctx.createOscillator(), crf = ctx.createBiquadFilter(), crg = ctx.createGain(), crl = ctx.createOscillator(), crlg = ctx.createGain();
+    cr.type = 'sawtooth'; cr.frequency.setValueAtTime(70, tc); cr.frequency.linearRampToValueAtTime(110, tc + cd);
+    crl.type = 'square'; crl.frequency.value = 17; crlg.gain.value = 0.12; crl.connect(crlg); crlg.connect(crg.gain);
+    crf.type = 'bandpass'; crf.frequency.value = 1300; crf.Q.value = 6;
+    crg.gain.setValueAtTime(0, tc); crg.gain.linearRampToValueAtTime(0.15, tc + 0.2); crg.gain.setValueAtTime(0.15, tc + cd - 0.2); crg.gain.linearRampToValueAtTime(0, tc + cd);
+    cr.connect(crf); crf.connect(crg); crg.connect(out); cr.start(tc); crl.start(tc); cr.stop(tc + cd); crl.stop(tc + cd);
+    // Knurren aus dem Spalt
+    const gr = ctx.createOscillator(), am = ctx.createOscillator(), amg = ctx.createGain(), glp = ctx.createBiquadFilter(), gg = ctx.createGain();
+    gr.type = 'sawtooth'; gr.frequency.setValueAtTime(58, tc + 0.6); gr.frequency.linearRampToValueAtTime(44, t0 + quietAt);
+    am.frequency.value = 26; amg.gain.value = 0.4; am.connect(amg); amg.connect(gg.gain);
+    glp.type = 'lowpass'; glp.frequency.value = 600;
+    gg.gain.setValueAtTime(0, tc + 0.6); gg.gain.linearRampToValueAtTime(0.4, t0 + quietAt - 0.1);
+    gr.connect(glp); glp.connect(gg); gg.connect(out); gr.start(tc + 0.6); am.start(tc + 0.6); gr.stop(t0 + quietAt); am.stop(t0 + quietAt);
+    // Der Sprung: Deckel knallt auf + Schrei
+    const th = t0 + hitAt;
+    const bang = ctx.createBufferSource(); bang.buffer = noise(0.5);
+    const blp = ctx.createBiquadFilter(); blp.type = 'lowpass'; blp.frequency.value = 2500;
+    const bg = ctx.createGain(); bg.gain.setValueAtTime(1, th); bg.gain.exponentialRampToValueAtTime(0.001, th + 0.5);
+    bang.connect(blp); blp.connect(bg); bg.connect(out); bang.start(th);
+    scream2(ctx, out, th, hitDur);
+    const sub = ctx.createOscillator(), subg = ctx.createGain();
+    sub.type = 'sawtooth'; sub.frequency.setValueAtTime(60, th); sub.frequency.linearRampToValueAtTime(35, th + hitDur);
+    subg.gain.value = 0.5; sub.connect(subg); subg.connect(out); sub.start(th); sub.stop(th + hitDur);
+    if (S && S.setDuck) { S.setDuck(0); setTimeout(() => S.setDuck(1), (hitAt + hitDur) * 1000); }
+  }
+
+  let busy4 = false;
+  function play4() {
+    if (busy4 || busy3 || busy2 || busy) return; busy4 = true;
+    // Ablauf (Sekunden)
+    const FADE = 1.0, knocks = [], CREAK = 6.2, QUIET = 8.3, HIT_AT = 9.2, LEAP = 0.38, HIT = 3.2;
+    let at = 1.8;
+    for (let i = 0; i < 11; i++) { knocks.push(at); at += i < 3 ? 0.9 : i < 6 ? 0.45 : 0.2 + Math.random() * 0.1; }
+    const total = (HIT_AT + HIT) * 1000;
+    const host = document.fullscreenElement || document.body;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:2147483647;pointer-events:all;overflow:hidden;background:transparent';
+    const c = document.createElement('canvas');
+    c.width = innerWidth; c.height = innerHeight;
+    c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0';
+    const msg = document.createElement('div');
+    msg.style.cssText = 'position:absolute;left:0;right:0;bottom:8vh;text-align:center;color:#ddd;font:italic 400 clamp(14px,2.4vw,28px) Georgia,serif;opacity:0;letter-spacing:.3em';
+    const flash = document.createElement('div');
+    flash.style.cssText = 'position:absolute;inset:0;background:#fff;mix-blend-mode:difference;opacity:0';
+    const red = document.createElement('div');
+    red.style.cssText = 'position:absolute;inset:0;background:#f00;mix-blend-mode:multiply;opacity:0';
+    wrap.append(c, red, msg, flash); host.appendChild(wrap);
+    try { audio4(knocks, CREAK, QUIET, HIT_AT, HIT); } catch (e) { /* kein Ton */ }
+    const start = performance.now();
+    let vibed = false, from = null;
+    (function frame(now) {
+      const t = (now - start) / 1000;
+      // Wackeln: kurz nach jedem Klopfer
+      let rock = 0;
+      for (const k of knocks) { const d = t - k; if (d >= 0 && d < 0.25) rock = (1 - d / 0.25) * (Math.random() < 0.5 ? -1 : 1); }
+      const lamp = Math.random() < (t > CREAK ? 0.12 : 0.03) ? 0.2 : 1;
+      if (t < HIT_AT) {
+        c.style.opacity = Math.min(1, t / FADE);
+        let open = 0, eyes = 0, fingers = 0;
+        if (t > CREAK) { const k = Math.min(1, (t - CREAK) / 1.4); open = 0.13 * (k * k * (3 - 2 * k)); eyes = Math.max(0, Math.min(1, (t - CREAK - 0.8) / 0.6)); }
+        if (t > CREAK + 1.2) fingers = Math.min(1, (t - CREAK - 1.2) / 0.5);
+        if (t >= QUIET) { msg.style.opacity = 0; }
+        if (t >= QUIET && t < HIT_AT) { drawTrunkScene(c, open, 0, eyes * (Math.random() < 0.1 ? 0 : 1), fingers, 0.25); }
+        else from = drawTrunkScene(c, open, rock, eyes, fingers, lamp);
+        msg.textContent = t < CREAK ? 'was war das?' : 'es will raus';
+        if (t < QUIET) msg.style.opacity = t > 2.5 ? 0.6 : 0;
+        c.style.transform = rock ? `translate(${rock * 4}px,${Math.abs(rock) * 3}px)` : '';
+      } else {
+        const h = t - HIT_AT, k = Math.max(0, 1 - h / HIT);
+        if (!vibed) { vibed = true; if (navigator.vibrate) try { navigator.vibrate([800, 50, 900, 50, 1200]); } catch (e) { /* */ } }
+        msg.style.opacity = 0;
+        if (h < LEAP) {
+          const pos = drawTrunkScene(c, 1, (Math.random() - 0.5) * 2, 0, 0, 1);
+          drawLeaper(c, from || pos, h / LEAP);
+        } else {
+          drawMonster(c, h - LEAP);
+          glitch(c, 0.6 + k * 1.2);
+        }
+        const sh = 90 * k;
+        c.style.transform = `translate(${(Math.random() - 0.5) * sh}px,${(Math.random() - 0.5) * sh}px) rotate(${(Math.random() - 0.5) * 8 * k}deg) scale(${1 + Math.random() * 0.15})`;
+        red.style.opacity = h > LEAP && Math.random() < 0.35 ? 0.9 : 0;
+        flash.style.opacity = h < 0.08 || (h > LEAP && Math.random() < 0.15) ? 1 : 0;
+        wrap.style.filter = h > LEAP && Math.random() < 0.2 ? 'invert(1) hue-rotate(180deg) contrast(2)' : '';
+      }
+      if (now - start < total) requestAnimationFrame(frame);
+      else { wrap.remove(); busy4 = false; }
+    })(start);
+  }
+
   // Schwarzbild vom Admin: Vollbild schwarz mit weißem Text (~4 s)
   let textBusy = false;
   function text(msg, dur = 4000) {
@@ -520,5 +763,5 @@
     setTimeout(() => { wrap.remove(); textBusy = false; }, dur);
   }
 
-  window.Jumpscare = { play, play2, play3, text };
+  window.Jumpscare = { play, play2, play3, play4, text };
 })();

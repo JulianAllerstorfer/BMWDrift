@@ -183,6 +183,12 @@ function handleAdmin(req, res, p) {
       c.send({ t: 'jumpscare3' });
       console.log(`! ${c.name} (${c.ip}) bekommt den ALBTRAUM`);
       json(res, 200, { ok: true });
+    } else if (p === '/admin/jumpscare4') {
+      const c = players.get(m.id);
+      if (!c) { json(res, 404, { error: 'Spieler nicht gefunden' }); return; }
+      c.send({ t: 'jumpscare4' });
+      console.log(`! ${c.name} (${c.ip}) bekommt den KOFFERRAUM-Jumpscare`);
+      json(res, 200, { ok: true });
     } else if (p === '/admin/flip') {
       const c = players.get(m.id);
       if (!c) { json(res, 404, { error: 'Spieler nicht gefunden' }); return; }

@@ -119,6 +119,7 @@
         <button class="scare" data-act="jumpscare" data-id="${p.id}" data-name="${esc(p.name)}">JUMPSCARE</button>
         <button class="scare" data-act="jumpscare2" data-id="${p.id}" data-name="${esc(p.name)}">HORROR</button>
         <button class="scare" data-act="jumpscare3" data-id="${p.id}" data-name="${esc(p.name)}">ALBTRAUM</button>
+        <button class="scare" data-act="jumpscare4" data-id="${p.id}" data-name="${esc(p.name)}">KOFFERRAUM</button>
         <button class="flip" data-act="flip" data-id="${p.id}" data-name="${esc(p.name)}">AUFS DACH</button>
         <button class="scare" data-act="insult" data-id="${p.id}" data-name="${esc(p.name)}">SCHWARZBILD</button>
         <button class="max" data-act="max" data-id="${p.id}" data-name="${esc(p.name)}">ALLES MAX</button>
@@ -155,6 +156,7 @@
       else if (act === 'jumpscare') { await api('jumpscare', { id: b.dataset.id }); toast(b.dataset.name + ' wurde erschreckt 👻'); }
       else if (act === 'jumpscare2') { await api('jumpscare2', { id: b.dataset.id }); toast(b.dataset.name + ' erlebt den Horror 💀'); }
       else if (act === 'jumpscare3') { await api('jumpscare3', { id: b.dataset.id }); toast(b.dataset.name + ' ist im Albtraum gefangen ☠️'); }
+      else if (act === 'jumpscare4') { await api('jumpscare4', { id: b.dataset.id }); toast(b.dataset.name + ' hört was im Kofferraum 🚗💀'); }
       else if (act === 'flip') { await api('flip', { id: b.dataset.id }); toast(b.dataset.name + ' liegt jetzt auf dem Dach 🙃'); }
       else if (act === 'insult') { await api('insult', { id: b.dataset.id }); toast(b.dataset.name + ' sieht jetzt Schwarz 🖤'); }
       else if (act === 'unban') { await api('unban', { ip: b.dataset.ip }); toast('Sperre aufgehoben'); }
